@@ -1,7 +1,12 @@
 /* eslint-disable @typescript-eslint/no-non-null-assertion */
 import test, { ExecutionContext } from 'ava';
 
-import { LetStatement, ReturnStatement } from './ast';
+import {
+    ExpressionStatement,
+    IntegerLiteral,
+    LetStatement,
+    ReturnStatement,
+} from './ast';
 import { Parser } from './parser';
 
 const testLetStatement = (
@@ -16,11 +21,7 @@ const testLetStatement = (
     t.is(name.value, expectedName);
 };
 
-const testReturnStatement = (
-    t: ExecutionContext,
-    s: ReturnStatement
-    // expectedName: string
-) => {
+const testReturnStatement = (t: ExecutionContext, s: ReturnStatement) => {
     const { token } = s;
 
     t.is(token.value, 'return');
@@ -67,7 +68,6 @@ let 1337;
         'Expected next token to be IDENTIFIER, got INTEGER instead. (4:4)',
     ]);
     t.not(program?.statements, undefined);
-    t.is(program?.statements.length, 0);
 });
 
 test('test simple `return` statements', (t) => {
@@ -85,15 +85,43 @@ return 120202;
     t.not(program?.statements, undefined);
     t.is(program?.statements.length, 3);
 
-    const expectedValues = ['5', '10', '993322'];
-
-    for (let i = 0; i < expectedValues.length; i++) {
+    for (let i = 0; i < program!.statements.length; i++) {
         const statement = program!.statements[i];
 
-        testReturnStatement(
-            t,
-            statement as ReturnStatement
-            // expectedIdentifiers[i]
-        );
+        testReturnStatement(t, statement as ReturnStatement);
     }
+});
+
+test('test simple identifier expressions', (t) => {
+    const input = `example;`;
+
+    const p = new Parser(input);
+    const program = p.parseProgram();
+
+    t.is(p.errors.length, 0);
+    t.not(program, null);
+    t.not(program?.statements, undefined);
+    t.is(program?.statements.length, 1);
+
+    const s = program!.statements[0] as ExpressionStatement;
+
+    t.is(s.expression.value, 'example');
+    t.is(s.token.value, 'example');
+});
+
+test('test simple integer literal expressions', (t) => {
+    const input = `693;`;
+
+    const p = new Parser(input);
+    const program = p.parseProgram();
+
+    t.is(p.errors.length, 0);
+    t.not(program, null);
+    t.not(program?.statements, undefined);
+    t.is(program?.statements.length, 1);
+
+    const s = program!.statements[0] as ExpressionStatement<IntegerLiteral>;
+
+    t.is(s.expression.value, 693);
+    t.is(s.expression.type.value, '693');
 });
