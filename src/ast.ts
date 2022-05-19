@@ -1,16 +1,29 @@
 import { Token } from './tokens';
 
 export type Identifier = {
-    type: Token;
+    token: Token;
     value: string;
 };
 
 export type IntegerLiteral = {
-    type: Token;
+    token: Token;
     value: number;
 };
 
-export type Expression = Identifier | IntegerLiteral;
+export type Prefix = {
+    token: Token;
+    operator: string;
+    right: Expression;
+};
+
+export type Infix = {
+    token: Token;
+    operator: string;
+    left: Expression;
+    right: Expression;
+};
+
+export type Expression = Identifier | IntegerLiteral | Prefix | Infix | null;
 
 export type LetStatement<T = Expression> = {
     token: Token;

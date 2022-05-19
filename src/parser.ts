@@ -2,8 +2,10 @@ import {
     Expression,
     ExpressionStatement,
     Identifier,
+    Infix,
     IntegerLiteral,
     LetStatement,
+    Prefix,
     Program,
     ReturnStatement,
     Statement,
@@ -25,17 +27,41 @@ enum Precedence {
 }
 
 export class Parser {
-    tokenParsers = {
+    static #precedences = {
+        [tokenList.EQUALS]: Precedence.EQUALS,
+        [tokenList.NOT_EQUALS]: Precedence.EQUALS,
+        [tokenList.LESS_THAN]: Precedence.LESS_GREATER,
+        [tokenList.GREATER_THAN]: Precedence.LESS_GREATER,
+        [tokenList.PLUS]: Precedence.SUM,
+        [tokenList.MINUS]: Precedence.SUM,
+        [tokenList.SLASH]: Precedence.PRODUCT,
+        [tokenList.ASTERISK]: Precedence.PRODUCT,
+    };
+
+    #tokenParsers = {
         [tokenList.LET]: () => this.#parseLetStatement(),
         [tokenList.RETURN]: () => this.#parseReturnStatement(),
     };
 
-    prefixParsers: Record<string, PrefixParseFunction> = {
+    #prefixParsers: Record<string, PrefixParseFunction> = {
         [tokenList.IDENTIFIER]: () => this.#parseIdentifier(),
         [tokenList.INTEGER]: () => this.#parseIntegerLiteral(),
+        [tokenList.BANG]: () => this.#parsePrefixExpression(),
+        [tokenList.MINUS]: () => this.#parsePrefixExpression(),
     };
 
-    infixParsers: Record<string, InfixParseFunction> = {};
+    infixParsers: Record<string, InfixParseFunction> = {
+        [tokenList.EQUALS]: (l: Expression) => this.#parseInfixExpression(l),
+        [tokenList.NOT_EQUALS]: (l: Expression) =>
+            this.#parseInfixExpression(l),
+        [tokenList.LESS_THAN]: (l: Expression) => this.#parseInfixExpression(l),
+        [tokenList.GREATER_THAN]: (l: Expression) =>
+            this.#parseInfixExpression(l),
+        [tokenList.PLUS]: (l: Expression) => this.#parseInfixExpression(l),
+        [tokenList.MINUS]: (l: Expression) => this.#parseInfixExpression(l),
+        [tokenList.SLASH]: (l: Expression) => this.#parseInfixExpression(l),
+        [tokenList.ASTERISK]: (l: Expression) => this.#parseInfixExpression(l),
+    };
 
     l: Lexer;
 
@@ -64,11 +90,17 @@ export class Parser {
     }
 
     #isCurrentToken(type: TokenType): boolean {
-        return this.currentToken?.type === type;
+        return this.currentToken.type === type;
     }
 
     #isNextToken(type: TokenType): boolean {
         return this.nextToken?.type === type;
+    }
+
+    #logError(error: string) {
+        const { line, column } = this.#getCurrentPosition();
+
+        this.errors.push(`${error} (${line}:${column})`);
     }
 
     #advanceIfNextToken(type: TokenType): boolean {
@@ -77,10 +109,10 @@ export class Parser {
             return true;
         }
 
-        const { line, column } = this.#getCurrentPosition();
+        this.#logError(
+            `Expected next token to be ${type}, got ${this.nextToken?.type} instead.`
+        );
 
-        const error = `Expected next token to be ${type}, got ${this.nextToken?.type} instead. (${line}:${column})`;
-        this.errors.push(error);
         return false;
     }
 
@@ -99,13 +131,56 @@ export class Parser {
         };
     }
 
+    #nextPrecedence(): Precedence {
+        const precedence = Parser.#precedences[this.nextToken?.type];
+
+        return precedence ?? Precedence.LOWEST;
+    }
+
+    #currentPrecedence(): Precedence {
+        const precedence = Parser.#precedences[this.currentToken.type];
+
+        return precedence ?? Precedence.LOWEST;
+    }
+
     #parseIdentifier(): Identifier {
         const { currentToken: identifier } = this;
 
         return {
-            type: identifier,
+            token: identifier,
             value: identifier.value,
         };
+    }
+
+    #parsePrefixExpression(): Prefix {
+        const { currentToken: prefix } = this;
+
+        this.#advance();
+
+        const e: Prefix = {
+            token: prefix,
+            operator: prefix.value,
+            right: this.#parseExpression(Precedence.PREFIX),
+        };
+
+        return e;
+    }
+
+    #parseInfixExpression(left: Expression): Infix {
+        const { currentToken: infix } = this;
+
+        const precedence = this.#currentPrecedence();
+        this.#advance();
+        const right = this.#parseExpression(precedence);
+
+        const e = {
+            token: infix,
+            operator: infix.value,
+            left,
+            right,
+        };
+
+        return e;
     }
 
     #parseIntegerLiteral(): IntegerLiteral {
@@ -114,27 +189,36 @@ export class Parser {
         const value = parseInt(integer.value, 10);
 
         return {
-            type: integer,
+            token: integer,
             value,
         };
     }
 
     #parseExpression(p: Precedence): Expression {
-        console.log(p);
-
-        const prefixParser = this.prefixParsers[this.currentToken?.type];
+        const prefixParser = this.#prefixParsers[this.currentToken.type];
 
         if (!prefixParser) {
-            return {
-                type: {
-                    type: '',
-                    value: '',
-                },
-                value: '',
-            };
+            this.#logError(`No prefix parser for ${this.currentToken.type}.`);
+            return null;
         }
 
-        return prefixParser();
+        let left = prefixParser();
+
+        while (
+            !this.#isNextToken(tokenList.SEMICOLON) &&
+            p < this.#nextPrecedence()
+        ) {
+            const infix = this.infixParsers[this.nextToken.type];
+            if (!infix) {
+                return left;
+            }
+
+            this.#advance();
+
+            left = infix(left);
+        }
+
+        return left;
     }
 
     #parseLetStatement(): LetStatement | null {
@@ -153,11 +237,11 @@ export class Parser {
         const s: LetStatement = {
             token: letToken,
             name: {
-                type: identifier,
+                token: identifier,
                 value: identifier.value,
             },
             value: {
-                type: {
+                token: {
                     type: '',
                     value: '',
                 },
@@ -179,7 +263,7 @@ export class Parser {
         const s: ReturnStatement = {
             token: returnToken,
             returnValue: {
-                type: {
+                token: {
                     type: '',
                     value: '',
                 },
@@ -213,13 +297,13 @@ export class Parser {
     }
 
     #parseStatement(): Statement | null {
-        const statementType = this.currentToken?.type;
+        const statementType = this.currentToken.type;
 
         if (!statementType) {
             return null;
         }
 
-        const handleParse = this.tokenParsers[statementType];
+        const handleParse = this.#tokenParsers[statementType];
 
         if (!handleParse) {
             return this.#parseExpressionStatement();
@@ -233,7 +317,7 @@ export class Parser {
             statements: [],
         };
 
-        while (this.currentToken?.type !== tokenList.EOF) {
+        while (this.currentToken.type !== tokenList.EOF) {
             const statement = this.#parseStatement();
 
             if (statement) {
