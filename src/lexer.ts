@@ -32,7 +32,7 @@ export class Lexer {
         this.character = null;
         this.segments = new Intl.Segmenter().segment(input)[Symbol.iterator]();
 
-        this.readSegment();
+        this.#readSegment();
     }
 
     static isValidCharacter(character: string) {
@@ -47,15 +47,15 @@ export class Lexer {
         return numberRegex.test(character);
     }
 
-    consumeWhitespace(): void {
+    #consumeWhitespace(): void {
         const whitespaceRegex = /\p{White_Space}/u;
 
         while (whitespaceRegex.test(this.character as string)) {
-            this.readSegment();
+            this.#readSegment();
         }
     }
 
-    readSegment(): void {
+    #readSegment(): void {
         const currentSegment = this.segments.next();
 
         if (currentSegment.done) {
@@ -68,17 +68,17 @@ export class Lexer {
         this.readPosition += currentSegment?.value?.segment.length ?? 0;
     }
 
-    readIdentifier(): string {
+    #readIdentifier(): string {
         const { position } = this;
 
         while (Lexer.isValidCharacter(this.character as string)) {
-            this.readSegment();
+            this.#readSegment();
         }
 
         return this.input.slice(position, this.position);
     }
 
-    peekCharacter(): string | null {
+    #peekCharacter(): string | null {
         if (this.readPosition >= this.input.length) {
             return null;
         }
@@ -87,7 +87,7 @@ export class Lexer {
     }
 
     nextToken(): Token {
-        this.consumeWhitespace();
+        this.#consumeWhitespace();
 
         const { character } = this;
 
@@ -95,11 +95,11 @@ export class Lexer {
 
         if (t) {
             if (character === '=') {
-                const peekedCharacter = this.peekCharacter();
+                const peekedCharacter = this.#peekCharacter();
 
                 if (peekedCharacter === '=') {
-                    this.readSegment();
-                    this.readSegment();
+                    this.#readSegment();
+                    this.#readSegment();
 
                     return {
                         type: tokenList.EQUALS,
@@ -109,11 +109,11 @@ export class Lexer {
             }
 
             if (character === '!') {
-                const peekedCharacter = this.peekCharacter();
+                const peekedCharacter = this.#peekCharacter();
 
                 if (peekedCharacter === '=') {
-                    this.readSegment();
-                    this.readSegment();
+                    this.#readSegment();
+                    this.#readSegment();
 
                     return {
                         type: tokenList.NOT_EQUALS,
@@ -122,7 +122,7 @@ export class Lexer {
                 }
             }
 
-            this.readSegment();
+            this.#readSegment();
             return {
                 type: t,
                 value: character ?? '',
@@ -132,7 +132,7 @@ export class Lexer {
         // As the Emoji unicode property matches numbers,
         // we check for numbers first.
         if (Lexer.isNumber(character as string)) {
-            const value = this.readIdentifier();
+            const value = this.#readIdentifier();
 
             return {
                 type: tokenList.INTEGER,
@@ -141,7 +141,7 @@ export class Lexer {
         }
 
         if (Lexer.isValidCharacter(character as string)) {
-            const value = this.readIdentifier();
+            const value = this.#readIdentifier();
 
             return {
                 type: lookupIdentifier(value),
@@ -149,7 +149,7 @@ export class Lexer {
             };
         }
 
-        this.readSegment();
+        this.#readSegment();
         return {
             type: tokenList.ILLEGAL,
             value: character ?? '',

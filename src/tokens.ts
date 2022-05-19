@@ -1,10 +1,3 @@
-type TokenType = string;
-
-export type Token = {
-    type: TokenType;
-    value: string;
-};
-
 export const tokenList = {
     ILLEGAL: 'ILLEGAL',
     EOF: 'EOF',
@@ -45,7 +38,7 @@ export const tokenList = {
     RETURN: 'RETURN',
 };
 
-export const keywords: Record<string, string> = {
+export const keywords: Record<string, TokenType> = {
     fn: tokenList.FUNCTION,
     let: tokenList.LET,
     true: tokenList.TRUE,
@@ -55,5 +48,12 @@ export const keywords: Record<string, string> = {
     return: tokenList.RETURN,
 };
 
+export type TokenType = string;
+
 export const lookupIdentifier = (identifier: string): TokenType =>
     keywords[identifier] ?? tokenList.IDENTIFIER;
+
+export type Token = {
+    type: TokenType;
+    value: string;
+};

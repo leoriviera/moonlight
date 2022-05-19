@@ -87,8 +87,6 @@ let result = add(seven, fourteen);
 });
 
 test('test lexer with additional operators', (t) => {
-    t.pass();
-
     const input = `let seven = 7;
 let fourteen = 14;
 

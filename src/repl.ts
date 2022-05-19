@@ -4,17 +4,17 @@ import { Lexer } from './lexer';
 import { keywords } from './tokens';
 
 repl.start({
-    eval: (input) => {
+    eval: (input, _context, _filename, callback) => {
         const l = new Lexer(input);
         const tokens = l.lexInput();
 
-        return tokens;
+        callback(null, tokens);
     },
-    completer: (line: string) => {
+    completer: (line: string, callback) => {
         const completed = Object.keys(keywords).filter((keyword) =>
             keyword.startsWith(line)
         );
 
-        return [completed, line];
+        callback(null, [completed, line]);
     },
 });
