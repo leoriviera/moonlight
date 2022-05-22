@@ -366,3 +366,23 @@ if(5 < 15){
         t.deepEqual(token, expectedTokens[e], 'failed at' + e);
     }
 });
+
+test('read integer expressions with no spaces separating digits', (t) => {
+    const input = `3*4;`;
+
+    const l = new Lexer(input);
+
+    const expectedTokens = [
+        new Token(tokenList.INTEGER, '3'),
+        new Token(tokenList.ASTERISK, '*'),
+        new Token(tokenList.INTEGER, '4'),
+        new Token(tokenList.SEMICOLON, ';'),
+        new Token(tokenList.EOF, ''),
+    ];
+
+    for (const expectedToken of expectedTokens) {
+        const token = l.nextToken();
+
+        t.deepEqual(token, expectedToken);
+    }
+});

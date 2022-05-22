@@ -78,6 +78,16 @@ export class Lexer {
         return this.input.slice(position, this.position);
     }
 
+    #readNumber(): string {
+        const { position } = this;
+
+        while (Lexer.isNumber(this.character as string)) {
+            this.#readSegment();
+        }
+
+        return this.input.slice(position, this.position);
+    }
+
     #peekCharacter(): string | null {
         if (this.readPosition >= this.input.length) {
             return null;
@@ -118,7 +128,7 @@ export class Lexer {
         // As the Emoji unicode property matches numbers,
         // we check for numbers first.
         if (Lexer.isNumber(character as string)) {
-            const value = this.#readIdentifier();
+            const value = this.#readNumber();
 
             return new Token(tokenList.INTEGER, value);
         }

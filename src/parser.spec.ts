@@ -246,6 +246,10 @@ test('test operator precedence parsing', (t) => {
             input: '3 + 4 * 5 == 3 * 1 + 4 * 5;',
             expected: '((3 + (4 * 5)) == ((3 * 1) + (4 * 5)))',
         },
+        {
+            input: '3*4;',
+            expected: '(3 * 4)',
+        },
     ];
 
     for (const test of operatorPrecedenceTests) {
