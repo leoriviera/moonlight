@@ -46,11 +46,12 @@ export class Parser {
 
     #prefixParsers: Record<string, PrefixParseFunction> = {
         [tokenList.IDENTIFIER]: () => this.#parseIdentifier(),
+        [tokenList.TRUE]: () => this.#parseBoolean(),
+        [tokenList.FALSE]: () => this.#parseBoolean(),
         [tokenList.INTEGER]: () => this.#parseIntegerLiteral(),
         [tokenList.BANG]: () => this.#parsePrefixExpression(),
         [tokenList.MINUS]: () => this.#parsePrefixExpression(),
-        [tokenList.TRUE]: () => this.#parseBoolean(),
-        [tokenList.FALSE]: () => this.#parseBoolean(),
+        [tokenList.LEFT_PARENTHESIS]: () => this.#parseGroupedExpression(),
     };
 
     infixParsers: Record<string, InfixParseFunction> = {
@@ -158,6 +159,18 @@ export class Parser {
         return new BooleanLiteral(boolean);
     }
 
+    #parseGroupedExpression(): Expression {
+        this.#advance();
+
+        const e = this.#parseExpression(Precedence.LOWEST);
+
+        if (!this.#advanceIfNextToken(tokenList.RIGHT_PARENTHESIS)) {
+            return null;
+        }
+
+        return e;
+    }
+
     #parsePrefixExpression(): Prefix {
         const { currentToken: prefix } = this;
 
@@ -191,12 +204,7 @@ export class Parser {
 
         if (!prefixParser) {
             this.#logError(`No prefix parser for ${this.currentToken.type}.`);
-            return {
-                token: {
-                    type: tokenList.ILLEGAL,
-                    value: '',
-                },
-            };
+            return null;
         }
 
         let left = prefixParser();
