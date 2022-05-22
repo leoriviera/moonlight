@@ -210,6 +210,42 @@ test('test operator precedence parsing', (t) => {
             input: 'a + b + c;',
             expected: '((a + b) + c)',
         },
+        {
+            input: 'a + b - c;',
+            expected: '((a + b) - c)',
+        },
+        {
+            input: 'a * b * c;',
+            expected: '((a * b) * c)',
+        },
+        {
+            input: 'a * b / c;',
+            expected: '((a * b) / c)',
+        },
+        {
+            input: 'a + b / c;',
+            expected: '(a + (b / c))',
+        },
+        {
+            input: 'a + b * c + d / e - f;',
+            expected: '(((a + (b * c)) + (d / e)) - f)',
+        },
+        {
+            input: '3 + 4; -5 * 5;',
+            expected: '(3 + 4)((-5) * 5)',
+        },
+        {
+            input: '5 > 4 == 3 < 4;',
+            expected: '((5 > 4) == (3 < 4))',
+        },
+        {
+            input: '5 < 4 != 3 > 4;',
+            expected: '((5 < 4) != (3 > 4))',
+        },
+        {
+            input: '3 + 4 * 5 == 3 * 1 + 4 * 5;',
+            expected: '((3 + (4 * 5)) == ((3 * 1) + (4 * 5)))',
+        },
     ];
 
     for (const test of operatorPrecedenceTests) {
@@ -219,7 +255,6 @@ test('test operator precedence parsing', (t) => {
         t.deepEqual(p.errors, []);
         t.not(program, null);
         t.not(program?.statements, undefined);
-        t.is(program?.statements.length, 1);
 
         const string = program!.toString();
         t.is(string, test.expected);
