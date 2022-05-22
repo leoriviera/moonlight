@@ -94,28 +94,17 @@ export class Lexer {
         const t = Lexer.#tokenMap.get(character);
 
         if (t) {
-            if (character === '=') {
+            if (character === '=' || character === '!') {
                 const peekedCharacter = this.#peekCharacter();
 
                 if (peekedCharacter === '=') {
                     this.#readSegment();
                     this.#readSegment();
 
-                    const type = tokenList.EQUALS;
-                    const value = character + peekedCharacter;
-
-                    return new Token(type, value);
-                }
-            }
-
-            if (character === '!') {
-                const peekedCharacter = this.#peekCharacter();
-
-                if (peekedCharacter === '=') {
-                    this.#readSegment();
-                    this.#readSegment();
-
-                    const type = tokenList.NOT_EQUALS;
+                    const type =
+                        character === '='
+                            ? tokenList.EQUALS
+                            : tokenList.NOT_EQUALS;
                     const value = character + peekedCharacter;
 
                     return new Token(type, value);
