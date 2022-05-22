@@ -62,6 +62,6 @@ export class Program {
     }
 
     toString(): string {
-        return this.statements.map((s) => s.toString()).join('\n');
+        return this.statements.map((s) => s.toString()).join('');
     }
 }
