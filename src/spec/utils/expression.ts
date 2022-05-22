@@ -50,5 +50,5 @@ export const testLiteralExpression = (
         return;
     }
 
-    t.fail(`No test for ${e.constructor.name}`);
+    t.fail(`No test for ${e?.constructor.name}`);
 };

@@ -1,11 +1,13 @@
 import { Token } from '../tokens';
 
-export interface Expression {
+interface IExpression {
     token: Token;
     toString(): string;
 }
 
-export class Identifier implements Expression {
+export type Expression = IExpression | null;
+
+export class Identifier implements IExpression {
     token: Token;
     value: string;
 
@@ -19,7 +21,7 @@ export class Identifier implements Expression {
     }
 }
 
-export class BooleanLiteral implements Expression {
+export class BooleanLiteral implements IExpression {
     token: Token;
     value: boolean;
 
@@ -33,7 +35,7 @@ export class BooleanLiteral implements Expression {
     }
 }
 
-export class IntegerLiteral implements Expression {
+export class IntegerLiteral implements IExpression {
     token: Token;
     value: number;
 
@@ -47,7 +49,7 @@ export class IntegerLiteral implements Expression {
     }
 }
 
-export class Prefix implements Expression {
+export class Prefix implements IExpression {
     token: Token;
     operator: string;
     right: Expression;
@@ -63,7 +65,7 @@ export class Prefix implements Expression {
     }
 }
 
-export class Infix implements Expression {
+export class Infix implements IExpression {
     token: Token;
     operator: string;
     left: Expression;
