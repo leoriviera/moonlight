@@ -146,10 +146,7 @@ export class Parser {
     #parseIdentifier(): Identifier {
         const { currentToken: identifier } = this;
 
-        return {
-            token: identifier,
-            value: identifier.value,
-        };
+        return new Identifier(identifier);
     }
 
     #parsePrefixExpression(): Prefix {
@@ -157,11 +154,9 @@ export class Parser {
 
         this.#advance();
 
-        const e: Prefix = {
-            token: prefix,
-            operator: prefix.value,
-            right: this.#parseExpression(Precedence.PREFIX),
-        };
+        const right = this.#parseExpression(Precedence.PREFIX);
+
+        const e = new Prefix(prefix, right);
 
         return e;
     }
@@ -173,25 +168,13 @@ export class Parser {
         this.#advance();
         const right = this.#parseExpression(precedence);
 
-        const e = {
-            token: infix,
-            operator: infix.value,
-            left,
-            right,
-        };
-
-        return e;
+        return new Infix(infix, left, right);
     }
 
     #parseIntegerLiteral(): IntegerLiteral {
         const { currentToken: integer } = this;
 
-        const value = parseInt(integer.value, 10);
-
-        return {
-            token: integer,
-            value,
-        };
+        return new IntegerLiteral(integer);
     }
 
     #parseExpression(p: Precedence): Expression {
@@ -199,7 +182,12 @@ export class Parser {
 
         if (!prefixParser) {
             this.#logError(`No prefix parser for ${this.currentToken.type}.`);
-            return null;
+            return {
+                token: {
+                    type: tokenList.ILLEGAL,
+                    value: '',
+                },
+            };
         }
 
         let left = prefixParser();
@@ -245,7 +233,6 @@ export class Parser {
                     type: '',
                     value: '',
                 },
-                value: '',
             },
         };
 
@@ -267,9 +254,10 @@ export class Parser {
                     type: '',
                     value: '',
                 },
-                value: '',
             },
         };
+
+        this.#advance();
 
         // TODO - implement value parsing
         while (!this.#isCurrentToken(tokenList.SEMICOLON)) {
@@ -284,10 +272,7 @@ export class Parser {
 
         const expression = this.#parseExpression(Precedence.LOWEST);
 
-        const s: ExpressionStatement = {
-            token: expressionToken,
-            expression,
-        };
+        const s = new ExpressionStatement(expressionToken, expression);
 
         if (this.#isNextToken(tokenList.SEMICOLON)) {
             this.#advance();
@@ -313,15 +298,13 @@ export class Parser {
     }
 
     parseProgram(): Program | null {
-        this.program = {
-            statements: [],
-        };
+        this.program = new Program();
 
         while (this.currentToken.type !== tokenList.EOF) {
             const statement = this.#parseStatement();
 
             if (statement) {
-                this.program.statements.push(statement);
+                this.program.addStatement(statement);
             }
 
             this.#advance();

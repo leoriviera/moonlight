@@ -195,3 +195,33 @@ test('test infix expressions', (t) => {
         testIntegerLiteral(t, s.expression.right as IntegerLiteral, test.right);
     }
 });
+
+test('test operator precedence parsing', (t) => {
+    const operatorPrecedenceTests = [
+        {
+            input: '-a * b;',
+            expected: '((-a) * b)',
+        },
+        {
+            input: '!-a;',
+            expected: '(!(-a))',
+        },
+        {
+            input: 'a + b + c;',
+            expected: '((a + b) + c)',
+        },
+    ];
+
+    for (const test of operatorPrecedenceTests) {
+        const p = new Parser(test.input);
+        const program = p.parseProgram();
+
+        t.deepEqual(p.errors, []);
+        t.not(program, null);
+        t.not(program?.statements, undefined);
+        t.is(program?.statements.length, 1);
+
+        const string = program!.toString();
+        t.is(string, test.expected);
+    }
+});

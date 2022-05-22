@@ -101,10 +101,10 @@ export class Lexer {
                     this.#readSegment();
                     this.#readSegment();
 
-                    return {
-                        type: tokenList.EQUALS,
-                        value: character + peekedCharacter,
-                    };
+                    const type = tokenList.EQUALS;
+                    const value = character + peekedCharacter;
+
+                    return new Token(type, value);
                 }
             }
 
@@ -115,18 +115,15 @@ export class Lexer {
                     this.#readSegment();
                     this.#readSegment();
 
-                    return {
-                        type: tokenList.NOT_EQUALS,
-                        value: character + peekedCharacter,
-                    };
+                    const type = tokenList.NOT_EQUALS;
+                    const value = character + peekedCharacter;
+
+                    return new Token(type, value);
                 }
             }
 
             this.#readSegment();
-            return {
-                type: t,
-                value: character ?? '',
-            };
+            return new Token(t, character ?? '');
         }
 
         // As the Emoji unicode property matches numbers,
@@ -134,26 +131,18 @@ export class Lexer {
         if (Lexer.isNumber(character as string)) {
             const value = this.#readIdentifier();
 
-            return {
-                type: tokenList.INTEGER,
-                value,
-            };
+            return new Token(tokenList.INTEGER, value);
         }
 
         if (Lexer.isValidCharacter(character as string)) {
             const value = this.#readIdentifier();
 
-            return {
-                type: lookupIdentifier(value),
-                value,
-            };
+            return new Token(lookupIdentifier(value), value);
         }
 
         this.#readSegment();
-        return {
-            type: tokenList.ILLEGAL,
-            value: character ?? '',
-        };
+
+        return new Token(tokenList.ILLEGAL, character as string);
     }
 
     lexInput(): Token[] {
