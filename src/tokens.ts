@@ -53,7 +53,16 @@ export type TokenType = string;
 export const lookupIdentifier = (identifier: string): TokenType =>
     keywords[identifier] ?? tokenList.IDENTIFIER;
 
-export type Token = {
+export class Token {
     type: TokenType;
     value: string;
-};
+
+    constructor(type: TokenType, value: string) {
+        this.type = type;
+        this.value = value;
+    }
+
+    toString(): string {
+        return this.value;
+    }
+}
