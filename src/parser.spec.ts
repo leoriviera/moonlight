@@ -2,6 +2,7 @@
 import test, { ExecutionContext } from 'ava';
 
 import {
+    BooleanLiteral,
     ExpressionStatement,
     Identifier,
     Infix,
@@ -11,6 +12,7 @@ import {
     ReturnStatement,
 } from './ast';
 import { Parser } from './parser';
+import { testLiteralExpression } from './spec/utils/expression';
 
 const testLetStatement = (
     t: ExecutionContext,
@@ -24,15 +26,6 @@ const testLetStatement = (
 
 const testReturnStatement = (t: ExecutionContext, s: ReturnStatement) =>
     t.is(s.token.value, 'return');
-
-const testIntegerLiteral = (
-    t: ExecutionContext,
-    i: IntegerLiteral,
-    value: number
-) => {
-    t.is(i.value, value);
-    t.is(i.token.value, value.toString());
-};
 
 test('test simple `let` statements', (t) => {
     const input = `
@@ -129,26 +122,15 @@ test('test simple integer literal expressions', (t) => {
 
     const s = program!.statements[0] as ExpressionStatement<IntegerLiteral>;
 
-    testIntegerLiteral(t, s.expression, 693);
+    testLiteralExpression(t, s.expression, 693);
 });
 
 test('test prefix expressions', (t) => {
     const prefixTests = [
-        {
-            input: '!5;',
-            operator: '!',
-            value: 5,
-        },
-        {
-            input: '-69;',
-            operator: '-',
-            value: 69,
-        },
-        // {
-        //     input: '!true;',
-        //     operator: '!',
-        //     value: true,
-        // },
+        { input: '!5;', operator: '!', value: 5 },
+        { input: '-69;', operator: '-', value: 69 },
+        { input: '!true;', operator: '!', value: true },
+        { input: '!false;', operator: '!', value: false },
     ];
 
     for (const test of prefixTests) {
@@ -163,7 +145,11 @@ test('test prefix expressions', (t) => {
         const s = program!.statements[0] as ExpressionStatement<Prefix>;
 
         t.is(s.expression.operator, test.operator);
-        testIntegerLiteral(t, s.expression.right as IntegerLiteral, test.value);
+        testLiteralExpression(
+            t,
+            s.expression.right as IntegerLiteral,
+            test.value
+        );
     }
 });
 
@@ -177,6 +163,9 @@ test('test infix expressions', (t) => {
         { input: '5 < 5;', left: 5, operator: '<', right: 5 },
         { input: '5 == 5;', left: 5, operator: '==', right: 5 },
         { input: '5 != 5;', left: 5, operator: '!=', right: 5 },
+        { input: 'true == true;', left: true, operator: '==', right: true },
+        { input: 'true != false;', left: true, operator: '!=', right: false },
+        { input: 'false == false;', left: false, operator: '==', right: false },
     ];
 
     for (const test of infixTests) {
@@ -191,65 +180,36 @@ test('test infix expressions', (t) => {
         const s = program!.statements[0] as ExpressionStatement<Infix>;
 
         t.is(s.expression.operator, test.operator);
-        testIntegerLiteral(t, s.expression.left as IntegerLiteral, test.left);
-        testIntegerLiteral(t, s.expression.right as IntegerLiteral, test.right);
+        testLiteralExpression(t, s.expression.left, test.left);
+        testLiteralExpression(t, s.expression.right, test.right);
     }
 });
 
 test('test operator precedence parsing', (t) => {
     const operatorPrecedenceTests = [
-        {
-            input: '-a * b;',
-            expected: '((-a) * b)',
-        },
-        {
-            input: '!-a;',
-            expected: '(!(-a))',
-        },
-        {
-            input: 'a + b + c;',
-            expected: '((a + b) + c)',
-        },
-        {
-            input: 'a + b - c;',
-            expected: '((a + b) - c)',
-        },
-        {
-            input: 'a * b * c;',
-            expected: '((a * b) * c)',
-        },
-        {
-            input: 'a * b / c;',
-            expected: '((a * b) / c)',
-        },
-        {
-            input: 'a + b / c;',
-            expected: '(a + (b / c))',
-        },
+        { input: '-a * b;', expected: '((-a) * b)' },
+        { input: '!-a;', expected: '(!(-a))' },
+        { input: 'a + b + c;', expected: '((a + b) + c)' },
+        { input: 'a + b - c;', expected: '((a + b) - c)' },
+        { input: 'a * b * c;', expected: '((a * b) * c)' },
+        { input: 'a * b / c;', expected: '((a * b) / c)' },
+        { input: 'a + b / c;', expected: '(a + (b / c))' },
         {
             input: 'a + b * c + d / e - f;',
             expected: '(((a + (b * c)) + (d / e)) - f)',
         },
-        {
-            input: '3 + 4; -5 * 5;',
-            expected: '(3 + 4)((-5) * 5)',
-        },
-        {
-            input: '5 > 4 == 3 < 4;',
-            expected: '((5 > 4) == (3 < 4))',
-        },
-        {
-            input: '5 < 4 != 3 > 4;',
-            expected: '((5 < 4) != (3 > 4))',
-        },
+        { input: '3 + 4; -5 * 5;', expected: '(3 + 4)((-5) * 5)' },
+        { input: '5 > 4 == 3 < 4;', expected: '((5 > 4) == (3 < 4))' },
+        { input: '5 < 4 != 3 > 4;', expected: '((5 < 4) != (3 > 4))' },
         {
             input: '3 + 4 * 5 == 3 * 1 + 4 * 5;',
             expected: '((3 + (4 * 5)) == ((3 * 1) + (4 * 5)))',
         },
-        {
-            input: '3*4;',
-            expected: '(3 * 4)',
-        },
+        { input: '3*4;', expected: '(3 * 4)' },
+        { input: 'true;', expected: 'true' },
+        { input: 'false;', expected: 'false' },
+        { input: '3 > 5 == false;', expected: '((3 > 5) == false)' },
+        { input: '3 < 5 == true;', expected: '((3 < 5) == true)' },
     ];
 
     for (const test of operatorPrecedenceTests) {
@@ -262,5 +222,26 @@ test('test operator precedence parsing', (t) => {
 
         const string = program!.toString();
         t.is(string, test.expected);
+    }
+});
+
+test('test boolean expression', (t) => {
+    const booleanTests = [
+        { input: 'true;', value: true },
+        { input: 'false;', value: false },
+    ];
+
+    for (const test of booleanTests) {
+        const p = new Parser(test.input);
+        const program = p.parseProgram();
+
+        t.deepEqual(p.errors, []);
+        t.not(program, null);
+        t.not(program?.statements, undefined);
+        t.is(program?.statements.length, 1);
+
+        const s = program!.statements[0] as ExpressionStatement<BooleanLiteral>;
+
+        testLiteralExpression(t, s.expression, test.value);
     }
 });

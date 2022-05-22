@@ -19,6 +19,20 @@ export class Identifier implements Expression {
     }
 }
 
+export class BooleanLiteral implements Expression {
+    token: Token;
+    value: boolean;
+
+    constructor(token: Token) {
+        this.token = token;
+        this.value = token.value === 'true';
+    }
+
+    toString(): string {
+        return this.value.toString();
+    }
+}
+
 export class IntegerLiteral implements Expression {
     token: Token;
     value: number;

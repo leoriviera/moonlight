@@ -1,4 +1,5 @@
 import {
+    BooleanLiteral,
     Expression,
     ExpressionStatement,
     Identifier,
@@ -48,6 +49,8 @@ export class Parser {
         [tokenList.INTEGER]: () => this.#parseIntegerLiteral(),
         [tokenList.BANG]: () => this.#parsePrefixExpression(),
         [tokenList.MINUS]: () => this.#parsePrefixExpression(),
+        [tokenList.TRUE]: () => this.#parseBoolean(),
+        [tokenList.FALSE]: () => this.#parseBoolean(),
     };
 
     infixParsers: Record<string, InfixParseFunction> = {
@@ -147,6 +150,12 @@ export class Parser {
         const { currentToken: identifier } = this;
 
         return new Identifier(identifier);
+    }
+
+    #parseBoolean(): BooleanLiteral {
+        const { currentToken: boolean } = this;
+
+        return new BooleanLiteral(boolean);
     }
 
     #parsePrefixExpression(): Prefix {
