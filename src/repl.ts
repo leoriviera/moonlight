@@ -7,25 +7,32 @@ import { keywords } from './tokens';
 
 const { argv } = process;
 
-const parseMode = argv.includes('-p');
+const parseMode = argv.includes('-p') || true;
+const astMode = argv.includes('-a');
 const lexMode = argv.includes('-l');
-
-const mode = lexMode ? 'lex' : parseMode ? 'parse' : 'parse';
 
 repl.start({
     eval: (input, _context, _filename, callback) => {
-        switch (mode) {
-            case 'lex': {
-                const l = new Lexer(input);
-                callback(null, l.lexInput());
-                break;
-            }
-            case 'parse': {
-                const p = new Parser(input);
-                const program = p.parseProgram();
-                callback(null, program);
-                break;
-            }
+        if (astMode) {
+            const p = new Parser(input);
+            const program = p.parseProgram();
+            callback(null, program);
+            return;
+        }
+
+        if (lexMode) {
+            const lexer = new Lexer(input);
+            const tokens = lexer.lexInput();
+            callback(null, tokens);
+            return;
+        }
+
+        if (parseMode) {
+            const p = new Parser(input);
+            const program = p.parseProgram();
+            const string = program?.toString();
+            callback(null, string);
+            return;
         }
     },
     completer: (line: string, callback) => {
