@@ -4,6 +4,7 @@ import { Token, tokenList } from '../tokens';
 
 import {
     BooleanLiteral,
+    FunctionLiteral,
     Identifier,
     If,
     Infix,
@@ -90,4 +91,23 @@ test('if expressions with an alternative produce expected string output', (t) =>
 
     const ifExpression = new If(ifToken, condition, consequence, alternative);
     t.is(ifExpression.toString(), 'if (x > y) 1 else 2');
+});
+
+test('functions produce expected string output', (t) => {
+    const fnToken = new Token(tokenList.FUNCTION, 'fn');
+
+    const x = new Identifier(new Token(tokenList.IDENTIFIER, 'x'));
+    const y = new Identifier(new Token(tokenList.IDENTIFIER, 'y'));
+    const z = new Identifier(new Token(tokenList.IDENTIFIER, 'z'));
+
+    const body = new BlockStatement(new Token(tokenList.LEFT_BRACE, '{'), [
+        new Infix(
+            new Token(tokenList.PLUS, '+'),
+            new Infix(new Token(tokenList.PLUS, '+'), x, y),
+            z
+        ),
+    ]);
+
+    const functionExpression = new FunctionLiteral(fnToken, [x, y, z], body);
+    t.is(functionExpression.toString(), 'fn(x, y, z) ((x + y) + z)');
 });

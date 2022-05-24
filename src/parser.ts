@@ -3,6 +3,7 @@ import {
     BooleanLiteral,
     Expression,
     ExpressionStatement,
+    FunctionLiteral,
     Identifier,
     If,
     Infix,
@@ -55,6 +56,7 @@ export class Parser {
         [tokenList.MINUS]: () => this.#parsePrefixExpression(),
         [tokenList.LEFT_PARENTHESIS]: () => this.#parseGroupedExpression(),
         [tokenList.IF]: () => this.#parseIfExpression(),
+        [tokenList.FUNCTION]: () => this.#parseFunctionLiteral(),
     };
 
     infixParsers: Record<string, InfixParseFunction> = {
@@ -194,6 +196,50 @@ export class Parser {
         const right = this.#parseExpression(precedence);
 
         return new Infix(infix, left, right);
+    }
+
+    #parseFunctionParameters(): Identifier[] | null {
+        const identifiers: Identifier[] = [];
+
+        if (this.#isNextToken(tokenList.RIGHT_PARENTHESIS)) {
+            this.#advance();
+            return identifiers;
+        }
+
+        this.#advance();
+
+        identifiers.push(new Identifier(this.currentToken));
+
+        while (this.#isNextToken(tokenList.COMMA)) {
+            this.#advance();
+            this.#advance();
+
+            identifiers.push(new Identifier(this.currentToken));
+        }
+
+        if (!this.#advanceIfNextToken(tokenList.RIGHT_PARENTHESIS)) {
+            return null;
+        }
+
+        return identifiers;
+    }
+
+    #parseFunctionLiteral(): FunctionLiteral | null {
+        const { currentToken: fn } = this;
+
+        if (!this.#advanceIfNextToken(tokenList.LEFT_PARENTHESIS)) {
+            return null;
+        }
+
+        const parameters = this.#parseFunctionParameters();
+
+        if (!this.#advanceIfNextToken(tokenList.LEFT_BRACE)) {
+            return null;
+        }
+
+        const body = this.#parseBlockStatement();
+
+        return new FunctionLiteral(fn, parameters, body);
     }
 
     #parseIntegerLiteral(): IntegerLiteral {

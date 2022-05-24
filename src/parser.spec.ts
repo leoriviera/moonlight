@@ -4,6 +4,7 @@ import test, { ExecutionContext } from 'ava';
 import {
     BooleanLiteral,
     ExpressionStatement,
+    FunctionLiteral,
     Identifier,
     If,
     Infix,
@@ -14,6 +15,7 @@ import {
 } from './ast';
 import { Parser } from './parser';
 import { testLiteralExpression } from './spec/utils/expression';
+import { Token, tokenList } from './tokens';
 
 const testLetStatement = (
     t: ExecutionContext,
@@ -341,5 +343,74 @@ test('test if expressions with an alternative', (t) => {
             ).expression?.toString(),
             test.alternative
         );
+    }
+});
+
+test.only('test function literal and parameters', (t) => {
+    const fnTests = [
+        {
+            input: 'fn() { };',
+            parameters: [],
+            body: '',
+        },
+        {
+            input: 'fn(x) { };',
+            parameters: [new Identifier(new Token(tokenList.IDENTIFIER, 'x'))],
+            body: '',
+        },
+        {
+            input: 'fn(x, y) { x + y; }',
+            parameters: [
+                new Identifier(new Token(tokenList.IDENTIFIER, 'x')),
+                new Identifier(new Token(tokenList.IDENTIFIER, 'y')),
+            ],
+            body: '(x + y)',
+        },
+        {
+            input: 'fn(x, y, z) { x + y + z; };',
+            parameters: [
+                new Identifier(new Token(tokenList.IDENTIFIER, 'x')),
+                new Identifier(new Token(tokenList.IDENTIFIER, 'y')),
+                new Identifier(new Token(tokenList.IDENTIFIER, 'z')),
+            ],
+            body: '((x + y) + z)',
+        },
+        {
+            input: 'fn(x, y, z) { };',
+            parameters: [
+                new Identifier(new Token(tokenList.IDENTIFIER, 'x')),
+                new Identifier(new Token(tokenList.IDENTIFIER, 'y')),
+                new Identifier(new Token(tokenList.IDENTIFIER, 'z')),
+            ],
+            body: '',
+        },
+        // {
+        //     input: 'fn(x, y, z) { return x + y; }',
+        //     parameters: [
+        //         new Identifier(new Token(tokenList.IDENTIFIER, 'x')),
+        //         new Identifier(new Token(tokenList.IDENTIFIER, 'y')),
+        //         new Identifier(new Token(tokenList.IDENTIFIER, 'z')),
+        //     ],
+        //     body: 'return (x + y)',
+        // },
+    ];
+
+    for (const test of fnTests) {
+        const p = new Parser(test.input);
+        const program = p.parseProgram();
+
+        console.log(program?.toString());
+
+        t.deepEqual(p.errors, []);
+        t.not(program, null);
+        t.not(program?.statements, undefined);
+        t.is(program?.statements.length, 1);
+
+        const s = program!
+            .statements[0] as ExpressionStatement<FunctionLiteral>;
+
+        t.is(s.expression.parameters?.length, test.parameters.length);
+        t.deepEqual(s.expression.parameters, test.parameters);
+        t.is(s.expression.body?.toString(), test.body);
     }
 });

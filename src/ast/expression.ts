@@ -104,8 +104,28 @@ export class If implements IExpression {
     }
 
     toString(): string {
-        return `if ${this.condition} ${this.consequence}${
+        return `${this.token.toString()} ${this.condition} ${this.consequence}${
             this.alternative !== null ? ' else ' + this.alternative : ''
         }`;
+    }
+}
+
+export class FunctionLiteral implements IExpression {
+    token: Token;
+    parameters: Identifier[] | null;
+    body: BlockStatement;
+
+    constructor(
+        token: Token,
+        parameters: Identifier[] | null,
+        body: BlockStatement
+    ) {
+        this.token = token;
+        this.parameters = parameters;
+        this.body = body;
+    }
+
+    toString(): string {
+        return `fn(${this.parameters?.join(', ')}) ${this.body}`;
     }
 }
