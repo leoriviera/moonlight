@@ -1,6 +1,7 @@
 import {
     BlockStatement,
     BooleanLiteral,
+    CallExpression,
     Expression,
     ExpressionStatement,
     FunctionLiteral,
@@ -40,6 +41,7 @@ export class Parser {
         [tokenList.MINUS]: Precedence.SUM,
         [tokenList.SLASH]: Precedence.PRODUCT,
         [tokenList.ASTERISK]: Precedence.PRODUCT,
+        [tokenList.LEFT_PARENTHESIS]: Precedence.CALL,
     };
 
     #tokenParsers = {
@@ -70,6 +72,8 @@ export class Parser {
         [tokenList.MINUS]: (l: Expression) => this.#parseInfixExpression(l),
         [tokenList.SLASH]: (l: Expression) => this.#parseInfixExpression(l),
         [tokenList.ASTERISK]: (l: Expression) => this.#parseInfixExpression(l),
+        [tokenList.LEFT_PARENTHESIS]: (l: Expression) =>
+            this.#parseCallExpression(l as Identifier | FunctionLiteral),
     };
 
     l: Lexer;
@@ -162,6 +166,40 @@ export class Parser {
         const { currentToken: boolean } = this;
 
         return new BooleanLiteral(boolean);
+    }
+
+    #parseCallArguments(): Expression[] | null {
+        const args: Expression[] = [];
+
+        if (this.#isNextToken(tokenList.RIGHT_PARENTHESIS)) {
+            this.#advance();
+            return args;
+        }
+
+        this.#advance();
+
+        args.push(this.#parseExpression(Precedence.LOWEST));
+
+        while (this.#isNextToken(tokenList.COMMA)) {
+            this.#advance();
+            this.#advance();
+
+            args.push(this.#parseExpression(Precedence.LOWEST));
+        }
+
+        if (!this.#advanceIfNextToken(tokenList.RIGHT_PARENTHESIS)) {
+            return null;
+        }
+
+        return args;
+    }
+
+    #parseCallExpression(fn: FunctionLiteral | Identifier): CallExpression {
+        const { currentToken: call } = this;
+
+        const args = this.#parseCallArguments();
+
+        return new CallExpression(call, fn, args);
     }
 
     #parseGroupedExpression(): Expression {
@@ -347,44 +385,29 @@ export class Parser {
             return null;
         }
 
-        const s: LetStatement = {
-            token: letToken,
-            name: {
-                token: identifier,
-                value: identifier.value,
-            },
-            value: null,
-        };
+        this.#advance();
 
-        // TODO - implement value parsing
-        while (!this.#isCurrentToken(tokenList.SEMICOLON)) {
+        const value = this.#parseExpression(Precedence.LOWEST);
+
+        if (this.#isNextToken(tokenList.SEMICOLON)) {
             this.#advance();
         }
 
-        return s;
+        return new LetStatement(letToken, new Identifier(identifier), value);
     }
 
     #parseReturnStatement(): ReturnStatement {
         const { currentToken: returnToken } = this;
 
-        const s: ReturnStatement = {
-            token: returnToken,
-            returnValue: {
-                token: {
-                    type: '',
-                    value: '',
-                },
-            },
-        };
-
         this.#advance();
 
-        // TODO - implement value parsing
-        while (!this.#isCurrentToken(tokenList.SEMICOLON)) {
+        const value = this.#parseExpression(Precedence.LOWEST);
+
+        if (this.#isNextToken(tokenList.SEMICOLON)) {
             this.#advance();
         }
 
-        return s;
+        return new ReturnStatement(returnToken, value);
     }
 
     #parseExpressionStatement(): ExpressionStatement {

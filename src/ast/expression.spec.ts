@@ -4,6 +4,7 @@ import { Token, tokenList } from '../tokens';
 
 import {
     BooleanLiteral,
+    CallExpression,
     FunctionLiteral,
     Identifier,
     If,
@@ -93,7 +94,27 @@ test('if expressions with an alternative produce expected string output', (t) =>
     t.is(ifExpression.toString(), 'if (x > y) 1 else 2');
 });
 
-test('functions produce expected string output', (t) => {
+test('functions with no parameters produce expected string output', (t) => {
+    const fnToken = new Token(tokenList.FUNCTION, 'fn');
+
+    const body = new BlockStatement(new Token(tokenList.LEFT_BRACE, '{'), []);
+
+    const functionExpression = new FunctionLiteral(fnToken, [], body);
+    t.is(functionExpression.toString(), 'fn() ');
+});
+
+test('functions with one parameter produce expected string output', (t) => {
+    const fnToken = new Token(tokenList.FUNCTION, 'fn');
+
+    const x = new Identifier(new Token(tokenList.IDENTIFIER, 'x'));
+
+    const body = new BlockStatement(new Token(tokenList.LEFT_BRACE, '{'), [x]);
+
+    const functionExpression = new FunctionLiteral(fnToken, [x], body);
+    t.is(functionExpression.toString(), 'fn(x) x');
+});
+
+test('functions with several parameters produce expected string output', (t) => {
     const fnToken = new Token(tokenList.FUNCTION, 'fn');
 
     const x = new Identifier(new Token(tokenList.IDENTIFIER, 'x'));
@@ -110,4 +131,43 @@ test('functions produce expected string output', (t) => {
 
     const functionExpression = new FunctionLiteral(fnToken, [x, y, z], body);
     t.is(functionExpression.toString(), 'fn(x, y, z) ((x + y) + z)');
+});
+
+test('call expressions with a function literal produce expected string output', (t) => {
+    const callToken = new Token(tokenList.LEFT_PARENTHESIS, '(');
+
+    const x = new Identifier(new Token(tokenList.IDENTIFIER, 'x'));
+    const y = new Identifier(new Token(tokenList.IDENTIFIER, 'y'));
+
+    const body = new BlockStatement(new Token(tokenList.LEFT_BRACE, '{'), [
+        new Infix(new Token(tokenList.MINUS, '-'), x, y),
+    ]);
+
+    const functionExpression = new FunctionLiteral(
+        new Token(tokenList.FUNCTION, 'fn'),
+        [x, y],
+        body
+    );
+
+    const args = [x, y];
+
+    const callExpression = new CallExpression(
+        callToken,
+        functionExpression,
+        args
+    );
+
+    t.is(callExpression.toString(), 'fn(x, y) (x - y)(x, y)');
+});
+
+test('call expressions with an identifier produce expected string output', (t) => {
+    const callToken = new Token(tokenList.LEFT_PARENTHESIS, '(');
+
+    const minus = new Identifier(new Token(tokenList.IDENTIFIER, 'minus'));
+    const x = new Identifier(new Token(tokenList.IDENTIFIER, 'x'));
+    const y = new Identifier(new Token(tokenList.IDENTIFIER, 'y'));
+
+    const callExpression = new CallExpression(callToken, minus, [x, y]);
+
+    t.is(callExpression.toString(), 'minus(x, y)');
 });

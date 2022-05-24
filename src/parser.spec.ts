@@ -3,6 +3,7 @@ import test, { ExecutionContext } from 'ava';
 
 import {
     BooleanLiteral,
+    CallExpression,
     ExpressionStatement,
     FunctionLiteral,
     Identifier,
@@ -14,8 +15,7 @@ import {
     ReturnStatement,
 } from './ast';
 import { Parser } from './parser';
-import { testLiteralExpression } from './spec/utils/expression';
-import { Token, tokenList } from './tokens';
+import { testIdentifier, testLiteralExpression } from './spec/utils/expression';
 
 const testLetStatement = (
     t: ExecutionContext,
@@ -27,30 +27,56 @@ const testLetStatement = (
     t.is(s.name.value, expectedName);
 };
 
-const testReturnStatement = (t: ExecutionContext, s: ReturnStatement) =>
+const testReturnStatement = (
+    t: ExecutionContext,
+    s: ReturnStatement,
+    expectedValue: unknown
+) => {
     t.is(s.token.value, 'return');
+    t.is(s.returnValue?.token.value, expectedValue);
+};
 
 test('test simple `let` statements', (t) => {
-    const input = `
-let x = 5;
-let y = 25;
-let hello = 1337;
-`;
+    const letTests = [
+        { input: 'let x = 5;', identifier: 'x', value: '5' },
+        { input: 'let y = true;', identifier: 'y', value: 'true' },
+        { input: 'let hello = y;', identifier: 'hello', value: 'y' },
+    ];
 
-    const p = new Parser(input);
-    const program = p.parseProgram();
+    for (const test of letTests) {
+        const p = new Parser(test.input);
+        const program = p.parseProgram();
 
-    t.deepEqual(p.errors, []);
-    t.not(program, null);
-    t.not(program?.statements, undefined);
-    t.is(program?.statements.length, 3);
+        t.deepEqual(p.errors, []);
+        t.not(program, null);
+        t.not(program?.statements, undefined);
+        t.is(program?.statements.length, 1);
 
-    const expectedIdentifiers = ['x', 'y', 'hello'];
+        const s = program!.statements[0];
 
-    for (let i = 0; i < expectedIdentifiers.length; i++) {
-        const statement = program!.statements[i];
+        testLetStatement(t, s as LetStatement, test.identifier);
+    }
+});
 
-        testLetStatement(t, statement as LetStatement, expectedIdentifiers[i]);
+test('test simple `let` statements without semicolons', (t) => {
+    const letTests = [
+        { input: 'let x = 5', identifier: 'x', value: '5' },
+        { input: 'let y = true', identifier: 'y', value: 'true' },
+        { input: 'let hello = y', identifier: 'hello', value: 'y' },
+    ];
+
+    for (const test of letTests) {
+        const p = new Parser(test.input);
+        const program = p.parseProgram();
+
+        t.deepEqual(p.errors, []);
+        t.not(program, null);
+        t.not(program?.statements, undefined);
+        t.is(program?.statements.length, 1);
+
+        const s = program!.statements[0];
+
+        testLetStatement(t, s as LetStatement, test.identifier);
     }
 });
 
@@ -74,24 +100,23 @@ let 1337;
 });
 
 test('test simple `return` statements', (t) => {
-    const input = `
-return 5;
-return 69;
-return 120202;
-`;
+    const returnTests = [
+        { input: 'return 5;', value: '5' },
+        { input: 'return true;', value: 'true' },
+        { input: 'return y;', value: 'y' },
+    ];
 
-    const p = new Parser(input);
-    const program = p.parseProgram();
+    for (const test of returnTests) {
+        const p = new Parser(test.input);
+        const program = p.parseProgram();
 
-    t.deepEqual(p.errors, []);
-    t.not(program, null);
-    t.not(program?.statements, undefined);
-    t.is(program?.statements.length, 3);
+        t.deepEqual(p.errors, []);
+        t.not(program, null);
+        t.not(program?.statements, undefined);
+        t.is(program?.statements.length, 1);
 
-    for (let i = 0; i < program!.statements.length; i++) {
-        const statement = program!.statements[i];
-
-        testReturnStatement(t, statement as ReturnStatement);
+        const s = program!.statements[0];
+        testReturnStatement(t, s as ReturnStatement, test.value);
     }
 });
 
@@ -218,6 +243,15 @@ test('test operator precedence parsing', (t) => {
         { input: '2 / (5 + 5);', expected: '(2 / (5 + 5))' },
         { input: '-(5 + 5);', expected: '(-(5 + 5))' },
         { input: '!(true == true);', expected: '(!(true == true))' },
+        { input: 'a + f(b * c) + d;', expected: '((a + f((b * c))) + d)' },
+        {
+            input: 'f(a, b, c, d * e, f + g, f(h + i))',
+            expected: 'f(a, b, c, (d * e), (f + g), f((h + i)))',
+        },
+        {
+            input: 'f(a + b + c * d / f - g)',
+            expected: 'f((((a + b) + ((c * d) / f)) - g))',
+        },
     ];
 
     for (const test of operatorPrecedenceTests) {
@@ -346,7 +380,7 @@ test('test if expressions with an alternative', (t) => {
     }
 });
 
-test.only('test function literal and parameters', (t) => {
+test('test function literal and parameters', (t) => {
     const fnTests = [
         {
             input: 'fn() { };',
@@ -355,33 +389,22 @@ test.only('test function literal and parameters', (t) => {
         },
         {
             input: 'fn(x) { };',
-            parameters: [new Identifier(new Token(tokenList.IDENTIFIER, 'x'))],
+            parameters: ['x'],
             body: '',
         },
         {
             input: 'fn(x, y) { x + y; }',
-            parameters: [
-                new Identifier(new Token(tokenList.IDENTIFIER, 'x')),
-                new Identifier(new Token(tokenList.IDENTIFIER, 'y')),
-            ],
+            parameters: ['x', 'y'],
             body: '(x + y)',
         },
         {
             input: 'fn(x, y, z) { x + y + z; };',
-            parameters: [
-                new Identifier(new Token(tokenList.IDENTIFIER, 'x')),
-                new Identifier(new Token(tokenList.IDENTIFIER, 'y')),
-                new Identifier(new Token(tokenList.IDENTIFIER, 'z')),
-            ],
+            parameters: ['x', 'y', 'z'],
             body: '((x + y) + z)',
         },
         {
             input: 'fn(x, y, z) { };',
-            parameters: [
-                new Identifier(new Token(tokenList.IDENTIFIER, 'x')),
-                new Identifier(new Token(tokenList.IDENTIFIER, 'y')),
-                new Identifier(new Token(tokenList.IDENTIFIER, 'z')),
-            ],
+            parameters: ['x', 'y', 'z'],
             body: '',
         },
         // {
@@ -399,8 +422,6 @@ test.only('test function literal and parameters', (t) => {
         const p = new Parser(test.input);
         const program = p.parseProgram();
 
-        console.log(program?.toString());
-
         t.deepEqual(p.errors, []);
         t.not(program, null);
         t.not(program?.statements, undefined);
@@ -410,7 +431,144 @@ test.only('test function literal and parameters', (t) => {
             .statements[0] as ExpressionStatement<FunctionLiteral>;
 
         t.is(s.expression.parameters?.length, test.parameters.length);
-        t.deepEqual(s.expression.parameters, test.parameters);
+
+        for (const p in test.parameters) {
+            testIdentifier(t, s.expression.parameters![p], test.parameters[p]);
+        }
+
         t.is(s.expression.body?.toString(), test.body);
+    }
+});
+
+test('test identifier call expressions with no arguments', (t) => {
+    const callExpressionTest = { input: 'a()', identifier: 'a', args: [] };
+
+    const p = new Parser(callExpressionTest.input);
+    const program = p.parseProgram();
+
+    t.deepEqual(p.errors, []);
+    t.not(program, null);
+    t.not(program?.statements, undefined);
+    t.is(program?.statements.length, 1);
+
+    const s = program!.statements[0] as ExpressionStatement<CallExpression>;
+
+    testIdentifier(
+        t,
+        s.expression.fn as Identifier,
+        callExpressionTest.identifier
+    );
+
+    t.is(s.expression.args?.length, callExpressionTest.args.length);
+    t.deepEqual(s.expression.args, callExpressionTest.args);
+});
+
+test('test identifier call expressions with infix expression arguments', (t) => {
+    const callExpressionTests = [
+        {
+            input: 'a(1 * 1) ',
+            identifier: 'a',
+            args: [{ left: 1, operator: '*', right: 1 }],
+        },
+        {
+            input: 'b(4 + 2, 7 - 3)',
+            identifier: 'b',
+            args: [
+                { left: 4, operator: '+', right: 2 },
+                { left: 7, operator: '-', right: 3 },
+            ],
+        },
+    ];
+
+    for (const test of callExpressionTests) {
+        const p = new Parser(test.input);
+        const program = p.parseProgram();
+
+        t.deepEqual(p.errors, []);
+        t.not(program, null);
+        t.not(program?.statements, undefined);
+        t.is(program?.statements.length, 1);
+
+        const s = program!.statements[0] as ExpressionStatement<CallExpression>;
+
+        testIdentifier(t, s.expression.fn as Identifier, test.identifier);
+
+        t.is(s.expression.args?.length, test.args.length);
+
+        for (const i in test.args) {
+            const infixExpression = s.expression.args![i] as Infix;
+
+            t.is(infixExpression.operator, test.args[i].operator);
+            testLiteralExpression(t, infixExpression.left, test.args[i].left);
+            testLiteralExpression(t, infixExpression.right, test.args[i].right);
+        }
+    }
+});
+
+test('test identifier call expressions with integer literal arguments', (t) => {
+    const callExpressionTests = [
+        {
+            input: 'a(1) ',
+            identifier: 'a',
+            args: [1],
+        },
+        { input: 'b(4, 7)', identifier: 'b', args: [4, 7] },
+        { input: 'c(3, 4, 6)', identifier: 'c', args: [3, 4, 6] },
+    ];
+
+    for (const test of callExpressionTests) {
+        const p = new Parser(test.input);
+        const program = p.parseProgram();
+
+        t.deepEqual(p.errors, []);
+        t.not(program, null);
+        t.not(program?.statements, undefined);
+        t.is(program?.statements.length, 1);
+
+        const s = program!.statements[0] as ExpressionStatement<CallExpression>;
+
+        testIdentifier(t, s.expression.fn as Identifier, test.identifier);
+
+        t.is(s.expression.args?.length, test.args.length);
+
+        for (const i in test.args) {
+            testLiteralExpression(
+                t,
+                s.expression.args![i] as ExpressionStatement<IntegerLiteral>,
+                test.args[i]
+            );
+        }
+    }
+});
+
+test('test identifier call expressions with identifier arguments', (t) => {
+    const callExpressionTests = [
+        { input: 'a(x) ', identifier: 'a', args: ['x'] },
+        { input: 'b(x, y) ', identifier: 'b', args: ['x', 'y'] },
+        { input: 'c(x, y, z) ', identifier: 'c', args: ['x', 'y', 'z'] },
+    ];
+
+    for (const test of callExpressionTests) {
+        const p = new Parser(test.input);
+        const program = p.parseProgram();
+
+        t.deepEqual(p.errors, []);
+        t.not(program, null);
+        t.not(program?.statements, undefined);
+        t.is(program?.statements.length, 1);
+
+        const s = program!.statements[0] as ExpressionStatement<CallExpression>;
+
+        testIdentifier(t, s.expression.fn as Identifier, test.identifier);
+
+        t.is(s.expression.args?.length, test.args.length);
+
+        for (const i in test.args) {
+            testIdentifier(
+                t,
+                s.expression.args![i] as Identifier,
+                test.args[i]
+            );
+        }
     }
 });

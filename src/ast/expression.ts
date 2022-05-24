@@ -129,3 +129,23 @@ export class FunctionLiteral implements IExpression {
         return `fn(${this.parameters?.join(', ')}) ${this.body}`;
     }
 }
+
+export class CallExpression implements IExpression {
+    token: Token;
+    fn: Identifier | FunctionLiteral;
+    args: Expression[] | null;
+
+    constructor(
+        token: Token,
+        fn: Identifier | FunctionLiteral,
+        args: Expression[] | null
+    ) {
+        this.token = token;
+        this.fn = fn;
+        this.args = args;
+    }
+
+    toString(): string {
+        return `${this.fn.toString()}(${this.args?.join(', ')})`;
+    }
+}
