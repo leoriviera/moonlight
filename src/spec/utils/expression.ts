@@ -7,12 +7,16 @@ import {
     IntegerLiteral,
 } from '../../ast';
 
-const testIdentifier = (t: ExecutionContext, i: Identifier, value: string) => {
+export const testIdentifier = (
+    t: ExecutionContext,
+    i: Identifier,
+    value: string
+) => {
     t.is(i.value, value);
     t.is(i.token.value, value);
 };
 
-const testIntegerLiteral = (
+export const testIntegerLiteral = (
     t: ExecutionContext,
     i: IntegerLiteral,
     value: number
@@ -21,7 +25,7 @@ const testIntegerLiteral = (
     t.is(i.token.value, value.toString());
 };
 
-const testBooleanLiteral = (
+export const testBooleanLiteral = (
     t: ExecutionContext,
     b: BooleanLiteral,
     value: boolean
