@@ -1,5 +1,7 @@
 import { Token } from '../tokens';
 
+import { BlockStatement } from './statement';
+
 interface IExpression {
     token: Token;
     toString(): string;
@@ -80,5 +82,30 @@ export class Infix implements IExpression {
 
     toString(): string {
         return `(${this.left} ${this.operator} ${this.right})`;
+    }
+}
+
+export class If implements IExpression {
+    token: Token;
+    condition: Expression;
+    consequence: BlockStatement;
+    alternative: BlockStatement | null;
+
+    constructor(
+        token: Token,
+        condition: Expression,
+        consequence: BlockStatement,
+        alternative: BlockStatement | null = null
+    ) {
+        this.token = token;
+        this.condition = condition;
+        this.consequence = consequence;
+        this.alternative = alternative;
+    }
+
+    toString(): string {
+        return `if ${this.condition} ${this.consequence}${
+            this.alternative !== null ? ' else ' + this.alternative : ''
+        }`;
     }
 }

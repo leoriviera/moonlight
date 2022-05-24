@@ -50,6 +50,20 @@ export class ExpressionStatement<T = Expression> implements Statement {
     }
 }
 
+export class BlockStatement implements Statement {
+    token: Token;
+    statements: Statement[];
+
+    constructor(token: Token, statements: Statement[]) {
+        this.token = token;
+        this.statements = statements;
+    }
+
+    toString(): string {
+        return this.statements.map((s) => s.toString()).join('\n');
+    }
+}
+
 export class Program {
     statements: Statement[];
 
@@ -62,6 +76,6 @@ export class Program {
     }
 
     toString(): string {
-        return this.statements.map((s) => s.toString()).join('');
+        return this.statements.map((s) => s.toString()).join('\n');
     }
 }

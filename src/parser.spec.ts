@@ -5,6 +5,7 @@ import {
     BooleanLiteral,
     ExpressionStatement,
     Identifier,
+    If,
     Infix,
     IntegerLiteral,
     LetStatement,
@@ -198,7 +199,7 @@ test('test operator precedence parsing', (t) => {
             input: 'a + b * c + d / e - f;',
             expected: '(((a + (b * c)) + (d / e)) - f)',
         },
-        { input: '3 + 4; -5 * 5;', expected: '(3 + 4)((-5) * 5)' },
+        { input: '3 + 4; -5 * 5;', expected: '(3 + 4)\n((-5) * 5)' },
         { input: '5 > 4 == 3 < 4;', expected: '((5 > 4) == (3 < 4))' },
         { input: '5 < 4 != 3 > 4;', expected: '((5 < 4) != (3 > 4))' },
         {
@@ -248,5 +249,97 @@ test('test boolean expression', (t) => {
         const s = program!.statements[0] as ExpressionStatement<BooleanLiteral>;
 
         testLiteralExpression(t, s.expression, test.value);
+    }
+});
+
+test('test if expressions with no alternative', (t) => {
+    const ifTests = [
+        {
+            input: 'if (x < y) { x }',
+            condition: '(x < y)',
+            consequence: 'x',
+        },
+        {
+            input: 'if (x > y) { y }',
+            condition: '(x > y)',
+            consequence: 'y',
+        },
+        {
+            input: 'if (!x) { y }',
+            condition: '(!x)',
+            consequence: 'y',
+        },
+    ];
+
+    for (const test of ifTests) {
+        const p = new Parser(test.input);
+        const program = p.parseProgram();
+
+        t.deepEqual(p.errors, []);
+        t.not(program, null);
+        t.not(program?.statements, undefined);
+        t.is(program?.statements.length, 1);
+
+        const s = program!.statements[0] as ExpressionStatement<If>;
+
+        t.is(s.expression.condition?.toString(), test.condition);
+        t.is(
+            (
+                s.expression.consequence.statements[0] as ExpressionStatement
+            ).expression?.toString(),
+            test.consequence
+        );
+        t.is(s.expression.alternative, null);
+    }
+});
+
+test('test if expressions with an alternative', (t) => {
+    const ifTests = [
+        {
+            input: 'if (x < y) { x } else { y }',
+            condition: '(x < y)',
+            consequence: 'x',
+            alternative: 'y',
+        },
+        {
+            input: 'if (x > y) { x } else { y }',
+            condition: '(x > y)',
+            consequence: 'x',
+            alternative: 'y',
+        },
+        {
+            input: 'if (!x) { x } else { y }',
+            condition: '(!x)',
+            consequence: 'x',
+            alternative: 'y',
+        },
+    ];
+
+    for (const test of ifTests) {
+        const p = new Parser(test.input);
+        const program = p.parseProgram();
+
+        t.deepEqual(p.errors, []);
+        t.not(program, null);
+        t.not(program?.statements, undefined);
+        t.is(program?.statements.length, 1);
+
+        const s = program!.statements[0] as ExpressionStatement<If>;
+
+        t.is(s.expression.condition?.toString(), test.condition);
+
+        t.is(
+            (
+                s.expression.consequence.statements[0] as ExpressionStatement
+            ).expression?.toString(),
+            test.consequence
+        );
+
+        t.is(
+            (
+                s.expression.alternative?.statements[0] as ExpressionStatement
+            ).expression?.toString(),
+            test.alternative
+        );
     }
 });

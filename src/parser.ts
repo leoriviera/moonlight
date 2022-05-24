@@ -1,8 +1,10 @@
 import {
+    BlockStatement,
     BooleanLiteral,
     Expression,
     ExpressionStatement,
     Identifier,
+    If,
     Infix,
     IntegerLiteral,
     LetStatement,
@@ -52,6 +54,7 @@ export class Parser {
         [tokenList.BANG]: () => this.#parsePrefixExpression(),
         [tokenList.MINUS]: () => this.#parsePrefixExpression(),
         [tokenList.LEFT_PARENTHESIS]: () => this.#parseGroupedExpression(),
+        [tokenList.IF]: () => this.#parseIfExpression(),
     };
 
     infixParsers: Record<string, InfixParseFunction> = {
@@ -199,6 +202,65 @@ export class Parser {
         return new IntegerLiteral(integer);
     }
 
+    #parseBlockStatement(): BlockStatement {
+        const { currentToken: leftBrace } = this;
+
+        const statements: Statement[] = [];
+
+        this.#advance();
+
+        while (
+            !this.#isCurrentToken(tokenList.RIGHT_BRACE) &&
+            !this.#isCurrentToken(tokenList.EOF)
+        ) {
+            const statement = this.#parseStatement();
+
+            if (statement) {
+                statements.push(statement);
+            }
+
+            this.#advance();
+        }
+
+        return new BlockStatement(leftBrace, statements);
+    }
+
+    #parseIfExpression(): If | null {
+        const { currentToken: ifToken } = this;
+
+        if (!this.#advanceIfNextToken(tokenList.LEFT_PARENTHESIS)) {
+            return null;
+        }
+
+        this.#advance();
+
+        const condition = this.#parseExpression(Precedence.LOWEST);
+
+        if (!this.#advanceIfNextToken(tokenList.RIGHT_PARENTHESIS)) {
+            return null;
+        }
+
+        if (!this.#advanceIfNextToken(tokenList.LEFT_BRACE)) {
+            return null;
+        }
+
+        const consequence = this.#parseBlockStatement();
+
+        let alternative: BlockStatement | null = null;
+
+        if (this.#isNextToken(tokenList.ELSE)) {
+            this.#advance();
+
+            if (!this.#advanceIfNextToken(tokenList.LEFT_BRACE)) {
+                return null;
+            }
+
+            alternative = this.#parseBlockStatement();
+        }
+
+        return new If(ifToken, condition, consequence, alternative);
+    }
+
     #parseExpression(p: Precedence): Expression {
         const prefixParser = this.#prefixParsers[this.currentToken.type];
 
@@ -245,12 +307,7 @@ export class Parser {
                 token: identifier,
                 value: identifier.value,
             },
-            value: {
-                token: {
-                    type: '',
-                    value: '',
-                },
-            },
+            value: null,
         };
 
         // TODO - implement value parsing
