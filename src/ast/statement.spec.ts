@@ -1,6 +1,6 @@
 import test from 'ava';
 
-import { Token, tokenList } from '../tokens';
+import { Token, tokenList } from '../lexer/tokens';
 
 import { Identifier, Infix, IntegerLiteral } from './expression';
 import {

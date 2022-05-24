@@ -2,8 +2,8 @@ import repl from 'node:repl';
 import util from 'node:util';
 
 import { Lexer } from './lexer';
+import { keywords } from './lexer/tokens';
 import { Parser } from './parser';
-import { keywords } from './tokens';
 
 const { argv } = process;
 

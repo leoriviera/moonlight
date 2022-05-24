@@ -1,7 +1,8 @@
 import test from 'ava';
 
-import { Lexer } from './lexer';
 import { Token, tokenList } from './tokens';
+
+import { Lexer } from './index';
 
 test('test lexer with symbols', (t) => {
     const input = '=+(){},;';

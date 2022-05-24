@@ -1,4 +1,4 @@
-import { Token } from '../tokens';
+import { Token } from '../lexer/tokens';
 
 import { BlockStatement } from './statement';
 
