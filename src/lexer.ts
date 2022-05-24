@@ -35,10 +35,10 @@ export class Lexer {
         this.#readSegment();
     }
 
-    static isValidCharacter(character: string) {
+    static isValidCharacter(character: string | null) {
         const characterRegex = /[\p{Letter}\p{Emoji}]/u;
 
-        return characterRegex.test(character);
+        return character !== null && characterRegex.test(character);
     }
 
     static isNumber(character: string) {
@@ -71,7 +71,7 @@ export class Lexer {
     #readIdentifier(): string {
         const { position } = this;
 
-        while (Lexer.isValidCharacter(this.character as string)) {
+        while (Lexer.isValidCharacter(this.character)) {
             this.#readSegment();
         }
 

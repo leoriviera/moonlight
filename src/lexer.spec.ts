@@ -78,6 +78,27 @@ let result = add(seven, fourteen);
     t.deepEqual(tokens, expectedTokens);
 });
 
+test('test lexer with keywords, with no semicolons', (t) => {
+    const input = `let seven = 7
+let fourteen = 14`;
+
+    const l = new Lexer(input);
+
+    const expectedTokens = [
+        new Token(tokenList.LET, 'let'),
+        new Token(tokenList.IDENTIFIER, 'seven'),
+        new Token(tokenList.ASSIGN, '='),
+        new Token(tokenList.INTEGER, '7'),
+        new Token(tokenList.LET, 'let'),
+        new Token(tokenList.IDENTIFIER, 'fourteen'),
+        new Token(tokenList.ASSIGN, '='),
+        new Token(tokenList.INTEGER, '14'),
+    ];
+
+    const tokens = l.lexInput();
+    t.deepEqual(tokens, expectedTokens);
+});
+
 test('test lexer with additional operators', (t) => {
     const input = `let seven = 7;
 let fourteen = 14;
