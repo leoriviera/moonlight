@@ -30,6 +30,13 @@ repl.start({
         if (parseMode) {
             const p = new Parser(input);
             const program = p.parseProgram();
+
+            if (p.errors.length > 0) {
+                const e = new Error(p.errors[0]);
+                callback(e, null);
+                return;
+            }
+
             const string = program?.toString();
             callback(null, string);
             return;
