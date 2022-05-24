@@ -17,14 +17,10 @@ test('test lexer with symbols', (t) => {
         new Token(tokenList.RIGHT_BRACE, '}'),
         new Token(tokenList.COMMA, ','),
         new Token(tokenList.SEMICOLON, ';'),
-        new Token(tokenList.EOF, ''),
     ];
 
-    for (const expectedToken of expectedTokens) {
-        const token = l.nextToken();
-
-        t.deepEqual(token, expectedToken);
-    }
+    const tokens = l.lexInput();
+    t.deepEqual(tokens, expectedTokens);
 });
 
 test('text lexer with whitespace and keywords', (t) => {
@@ -76,14 +72,10 @@ let result = add(seven, fourteen);
         new Token(tokenList.IDENTIFIER, 'fourteen'),
         new Token(tokenList.RIGHT_PARENTHESIS, ')'),
         new Token(tokenList.SEMICOLON, ';'),
-        new Token(tokenList.EOF, ''),
     ];
 
-    for (const expectedToken of expectedTokens) {
-        const token = l.nextToken();
-
-        t.deepEqual(token, expectedToken);
-    }
+    const tokens = l.lexInput();
+    t.deepEqual(tokens, expectedTokens);
 });
 
 test('test lexer with additional operators', (t) => {
@@ -151,14 +143,10 @@ let result = add(seven, fourteen);
         new Token(tokenList.GREATER_THAN, '>'),
         new Token(tokenList.INTEGER, '5'),
         new Token(tokenList.SEMICOLON, ';'),
-        new Token(tokenList.EOF, ''),
     ];
 
-    for (const expectedToken of expectedTokens) {
-        const token = l.nextToken();
-
-        t.deepEqual(token, expectedToken);
-    }
+    const tokens = l.lexInput();
+    t.deepEqual(tokens, expectedTokens);
 });
 
 test('test lexer with additional keywords', (t) => {
@@ -249,14 +237,10 @@ if(5 < 15){
         new Token(tokenList.FALSE, 'false'),
         new Token(tokenList.SEMICOLON, ';'),
         new Token(tokenList.RIGHT_BRACE, '}'),
-        new Token(tokenList.EOF, ''),
     ];
 
-    for (const expectedToken of expectedTokens) {
-        const token = l.nextToken();
-
-        t.deepEqual(token, expectedToken);
-    }
+    const tokens = l.lexInput();
+    t.deepEqual(tokens, expectedTokens);
 });
 
 test('test lexer with equality and inequality operator', (t) => {
@@ -358,13 +342,10 @@ if(5 < 15){
         new Token(tokenList.NOT_EQUALS, '!='),
         new Token(tokenList.INTEGER, '15'),
         new Token(tokenList.SEMICOLON, ';'),
-        new Token(tokenList.EOF, ''),
     ];
 
-    for (const e in expectedTokens) {
-        const token = l.nextToken();
-        t.deepEqual(token, expectedTokens[e], 'failed at' + e);
-    }
+    const tokens = l.lexInput();
+    t.deepEqual(tokens, expectedTokens);
 });
 
 test('read integer expressions with no spaces separating digits', (t) => {
@@ -377,12 +358,8 @@ test('read integer expressions with no spaces separating digits', (t) => {
         new Token(tokenList.ASTERISK, '*'),
         new Token(tokenList.INTEGER, '4'),
         new Token(tokenList.SEMICOLON, ';'),
-        new Token(tokenList.EOF, ''),
     ];
 
-    for (const expectedToken of expectedTokens) {
-        const token = l.nextToken();
-
-        t.deepEqual(token, expectedToken);
-    }
+    const tokens = l.lexInput();
+    t.deepEqual(tokens, expectedTokens);
 });

@@ -89,10 +89,6 @@ export class Lexer {
     }
 
     #peekCharacter(): string | null {
-        if (this.readPosition >= this.input.length) {
-            return null;
-        }
-
         return this.input.charAt(this.readPosition);
     }
 
