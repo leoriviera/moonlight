@@ -37,8 +37,10 @@ repl.start({
                 return;
             }
 
-            const string = program?.toString();
-            callback(null, string);
+            const output = program?.toString();
+            callback(null, output);
+            return;
+        }
             return;
         }
     },
