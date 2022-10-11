@@ -2,11 +2,11 @@ import { Token } from '../lexer/tokens';
 
 import { Expression, Identifier } from './expression';
 
-export interface Statement {
+export interface IStatement {
     token: Token;
 }
 
-export class LetStatement<T = Expression> implements Statement {
+export class LetStatement<T = Expression> implements IStatement {
     token: Token;
     name: Identifier;
     value: T;
@@ -22,7 +22,7 @@ export class LetStatement<T = Expression> implements Statement {
     }
 }
 
-export class ReturnStatement<T = Expression> implements Statement {
+export class ReturnStatement<T = Expression> implements IStatement {
     token: Token;
     returnValue: T;
 
@@ -36,7 +36,7 @@ export class ReturnStatement<T = Expression> implements Statement {
     }
 }
 
-export class ExpressionStatement<T = Expression> implements Statement {
+export class ExpressionStatement<T = Expression> implements IStatement {
     token: Token;
     expression: T;
 
@@ -50,11 +50,11 @@ export class ExpressionStatement<T = Expression> implements Statement {
     }
 }
 
-export class BlockStatement implements Statement {
+export class BlockStatement implements IStatement {
     token: Token;
-    statements: Statement[];
+    statements: IStatement[];
 
-    constructor(token: Token, statements: Statement[]) {
+    constructor(token: Token, statements: IStatement[]) {
         this.token = token;
         this.statements = statements;
     }
@@ -65,13 +65,13 @@ export class BlockStatement implements Statement {
 }
 
 export class Program {
-    statements: Statement[];
+    statements: IStatement[];
 
-    constructor(statements?: Statement[]) {
+    constructor(statements?: IStatement[]) {
         this.statements = statements ?? [];
     }
 
-    addStatement(s: Statement): void {
+    addStatement(s: IStatement): void {
         this.statements.push(s);
     }
 

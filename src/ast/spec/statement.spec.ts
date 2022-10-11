@@ -1,15 +1,14 @@
 import test from 'ava';
 
-import { Token, tokenList } from '../lexer/tokens';
-
-import { Identifier, Infix, IntegerLiteral } from './expression';
+import { Token, tokenList } from '../../lexer/tokens';
+import { Identifier, Infix, IntegerLiteral } from '../expression';
 import {
     BlockStatement,
     ExpressionStatement,
     LetStatement,
     Program,
     ReturnStatement,
-} from './statement';
+} from '../statement';
 
 test('let statement returns expected string output', (t) => {
     const token = new Token(tokenList.LET, 'let');

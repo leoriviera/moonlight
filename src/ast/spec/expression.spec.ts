@@ -1,7 +1,6 @@
 import test from 'ava';
 
-import { Token, tokenList } from '../lexer/tokens';
-
+import { Token, tokenList } from '../../lexer/tokens';
 import {
     BooleanLiteral,
     CallExpression,
@@ -11,8 +10,8 @@ import {
     Infix,
     IntegerLiteral,
     Prefix,
-} from './expression';
-import { BlockStatement } from './statement';
+} from '../expression';
+import { BlockStatement } from '../statement';
 
 test('identifiers produce expected string output', (t) => {
     const token = new Token(tokenList.IDENTIFIER, 'foobar');
