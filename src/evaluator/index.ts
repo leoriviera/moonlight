@@ -58,7 +58,7 @@ export class Evaluator {
         return true;
     }
 
-    static #createError(errorType: ErrorTypes, ...args: string[]) {
+    static #throwError(errorType: ErrorTypes, ...args: string[]) {
         const messageGenerator: Record<ErrorTypes, (a: string[]) => string> = {
             UNKNOWN_OPERATOR: (a) =>
                 'unknown operator: ' + a.join(a.length === 2 ? '' : ' '),
@@ -71,7 +71,7 @@ export class Evaluator {
 
         const messageFn = messageGenerator[errorType];
 
-        return new Err(messageFn(args));
+        throw new Error(messageFn(args));
     }
 
     static #convertToBooleanObject(b: boolean): IObject {
@@ -97,7 +97,7 @@ export class Evaluator {
 
     #evaluateMinusPrefixOperatorExpression(right: IObject): IObject {
         if (right.type !== objectList.INTEGER) {
-            return Evaluator.#createError('UNKNOWN_OPERATOR', '-', right.type);
+            throw Evaluator.#throwError('UNKNOWN_OPERATOR', '-', right.type);
         }
 
         if (!(right instanceof Integer)) {
@@ -126,7 +126,7 @@ export class Evaluator {
         const evaluatorFn =
             operatorMap[operator] ??
             (() =>
-                Evaluator.#createError(
+                Evaluator.#throwError(
                     'UNKNOWN_OPERATOR',
                     left.type,
                     operator,
@@ -142,7 +142,7 @@ export class Evaluator {
         right: IObject
     ): IObject {
         if (left.type !== right.type) {
-            return Evaluator.#createError(
+            throw Evaluator.#throwError(
                 'TYPE_MISMATCH',
                 left.type,
                 operator,
@@ -163,7 +163,7 @@ export class Evaluator {
         const evaluatorFn =
             operatorMap[operator] ??
             (() =>
-                Evaluator.#createError(
+                Evaluator.#throwError(
                     'UNKNOWN_OPERATOR',
                     left.type,
                     operator,
@@ -182,7 +182,7 @@ export class Evaluator {
         const evaluatorFn =
             operatorMap[operator] ??
             (() =>
-                Evaluator.#createError(
+                Evaluator.#throwError(
                     'UNKNOWN_OPERATOR',
                     operator,
                     right.type
@@ -193,9 +193,6 @@ export class Evaluator {
 
     #evaluateIfStatement(conditional: If): IObject {
         const condition = this.#evaluateNode(conditional.condition);
-        if (condition instanceof Err) {
-            return condition;
-        }
 
         const { consequence, alternative } = conditional;
 
@@ -233,7 +230,7 @@ export class Evaluator {
         const value = this.environment.get(identifier);
 
         if (!value) {
-            return Evaluator.#createError('UNDEFINED_IDENTIFIER', identifier);
+            throw Evaluator.#throwError('UNDEFINED_IDENTIFIER', identifier);
         }
 
         return value;
@@ -248,10 +245,6 @@ export class Evaluator {
             if (result instanceof Return) {
                 return result.value;
             }
-
-            if (result instanceof Err) {
-                return result;
-            }
         }
 
         return result;
@@ -262,9 +255,6 @@ export class Evaluator {
 
         for (const e of n) {
             const evaluated = this.#evaluateNode(e);
-            if (evaluated instanceof Err) {
-                return [evaluated];
-            }
 
             result.push(evaluated);
         }
@@ -274,7 +264,7 @@ export class Evaluator {
 
     #callFunction(fn: IObject, args: IObject[]): IObject {
         if (!(fn instanceof Fn)) {
-            return Evaluator.#createError('NOT_FUNCTION', fn.type);
+            throw Evaluator.#throwError('NOT_FUNCTION', fn.type);
         }
 
         const { params, env } = fn.value;
@@ -320,18 +310,13 @@ export class Evaluator {
 
         if (n instanceof LetStatement) {
             const value = this.#evaluateNode(n.value);
-            if (value instanceof Err) {
-                return value;
-            }
 
             this.environment.set(n.name.value, value);
         }
 
         if (n instanceof ReturnStatement) {
             const value = this.#evaluateNode(n.returnValue);
-            if (value instanceof Err) {
-                return value;
-            }
+
             return new Return(value);
         }
 
@@ -339,9 +324,6 @@ export class Evaluator {
             const { operator } = n;
 
             const right = this.#evaluateNode(n.right);
-            if (right instanceof Err) {
-                return right;
-            }
 
             return this.#evaluatePrefixExpression(operator, right);
         }
@@ -350,14 +332,8 @@ export class Evaluator {
             const { operator } = n;
 
             const left = this.#evaluateNode(n.left);
-            if (left instanceof Err) {
-                return left;
-            }
 
             const right = this.#evaluateNode(n.right);
-            if (right instanceof Err) {
-                return right;
-            }
 
             return this.#evaluateInfixExpression(operator, left, right);
         }
@@ -366,7 +342,7 @@ export class Evaluator {
             const { parameters, body } = n;
 
             if (parameters === null) {
-                return Evaluator.#createError(
+                throw Evaluator.#throwError(
                     'INVALID_FUNCTION_PARAMETERS',
                     n.token.value
                 );
@@ -377,21 +353,15 @@ export class Evaluator {
 
         if (n instanceof CallExpression) {
             const fn = this.#evaluateNode(n.fn);
-            if (fn instanceof Err) {
-                return fn;
-            }
 
             if (n.args === null) {
-                return Evaluator.#createError(
+                throw Evaluator.#throwError(
                     'INVALID_FUNCTION_PARAMETERS',
                     n.token.value
                 );
             }
 
             const args = this.#evaluateExpressions(n.args);
-            if (args.length === 1 && args[0] instanceof Err) {
-                return args[0];
-            }
 
             return this.#callFunction(fn, args);
         }
@@ -414,10 +384,16 @@ export class Evaluator {
             return null;
         }
 
-        for (const node of statements) {
-            this.#evaluateNode(node);
-        }
+        try {
+            for (const node of statements) {
+                this.#evaluateNode(node);
+            }
 
-        return this.#evaluateNode(this.program);
+            return this.#evaluateNode(this.program);
+        } catch (error) {
+            const { message } = error as Error;
+
+            return new Err(message);
+        }
     }
 }
