@@ -47,7 +47,7 @@ export class Evaluator {
         this.environment = env ?? new Environment();
     }
 
-    #isTruthy(o: IObject): boolean {
+    static #isTruthy(o: IObject): boolean {
         if (
             o === Evaluator.#references.null ||
             o === Evaluator.#references.false
@@ -58,7 +58,7 @@ export class Evaluator {
         return true;
     }
 
-    #createError(errorType: ErrorTypes, ...args: string[]) {
+    static #createError(errorType: ErrorTypes, ...args: string[]) {
         const messageGenerator: Record<ErrorTypes, (a: string[]) => string> = {
             UNKNOWN_OPERATOR: (a) =>
                 'unknown operator: ' + a.join(a.length === 2 ? '' : ' '),
@@ -72,6 +72,10 @@ export class Evaluator {
         const messageFn = messageGenerator[errorType];
 
         return new Err(messageFn(args));
+    }
+
+    static #convertToBooleanObject(b: boolean): IObject {
+        return b ? Evaluator.#references.true : Evaluator.#references.false;
     }
 
     #evaluateBangOperatorExpression(right: IObject): IObject {
@@ -93,7 +97,7 @@ export class Evaluator {
 
     #evaluateMinusPrefixOperatorExpression(right: IObject): IObject {
         if (right.type !== objectList.INTEGER) {
-            return this.#createError('UNKNOWN_OPERATOR', '-', right.type);
+            return Evaluator.#createError('UNKNOWN_OPERATOR', '-', right.type);
         }
 
         if (!(right instanceof Integer)) {
@@ -101,10 +105,6 @@ export class Evaluator {
         }
 
         return new Integer(-right.value);
-    }
-
-    #convertToBooleanObject(b: boolean): IObject {
-        return b ? Evaluator.#references.true : Evaluator.#references.false;
     }
 
     #evaluateIntegerInfixExpression(
@@ -117,16 +117,16 @@ export class Evaluator {
             '-': (l, r) => new Integer(l - r),
             '*': (l, r) => new Integer(l * r),
             '/': (l, r) => new Integer(l / r),
-            '<': (l, r) => this.#convertToBooleanObject(l < r),
-            '>': (l, r) => this.#convertToBooleanObject(l > r),
-            '==': (l, r) => this.#convertToBooleanObject(l === r),
-            '!=': (l, r) => this.#convertToBooleanObject(l !== r),
+            '<': (l, r) => Evaluator.#convertToBooleanObject(l < r),
+            '>': (l, r) => Evaluator.#convertToBooleanObject(l > r),
+            '==': (l, r) => Evaluator.#convertToBooleanObject(l === r),
+            '!=': (l, r) => Evaluator.#convertToBooleanObject(l !== r),
         };
 
         const evaluatorFn =
             operatorMap[operator] ??
             (() =>
-                this.#createError(
+                Evaluator.#createError(
                     'UNKNOWN_OPERATOR',
                     left.type,
                     operator,
@@ -142,7 +142,7 @@ export class Evaluator {
         right: IObject
     ): IObject {
         if (left.type !== right.type) {
-            return this.#createError(
+            return Evaluator.#createError(
                 'TYPE_MISMATCH',
                 left.type,
                 operator,
@@ -156,14 +156,14 @@ export class Evaluator {
 
         const operatorMap: Record<string, (l: unknown, r: unknown) => IObject> =
             {
-                '==': (l, r) => this.#convertToBooleanObject(l === r),
-                '!=': (l, r) => this.#convertToBooleanObject(l !== r),
+                '==': (l, r) => Evaluator.#convertToBooleanObject(l === r),
+                '!=': (l, r) => Evaluator.#convertToBooleanObject(l !== r),
             };
 
         const evaluatorFn =
             operatorMap[operator] ??
             (() =>
-                this.#createError(
+                Evaluator.#createError(
                     'UNKNOWN_OPERATOR',
                     left.type,
                     operator,
@@ -181,7 +181,12 @@ export class Evaluator {
 
         const evaluatorFn =
             operatorMap[operator] ??
-            (() => this.#createError('UNKNOWN_OPERATOR', operator, right.type));
+            (() =>
+                Evaluator.#createError(
+                    'UNKNOWN_OPERATOR',
+                    operator,
+                    right.type
+                ));
 
         return evaluatorFn(right);
     }
@@ -194,7 +199,7 @@ export class Evaluator {
 
         const { consequence, alternative } = conditional;
 
-        if (this.#isTruthy(condition)) {
+        if (Evaluator.#isTruthy(condition)) {
             return this.#evaluateNode(consequence);
         } else if (alternative) {
             return this.#evaluateNode(alternative);
@@ -228,7 +233,7 @@ export class Evaluator {
         const value = this.environment.get(identifier);
 
         if (!value) {
-            return this.#createError('UNDEFINED_IDENTIFIER', identifier);
+            return Evaluator.#createError('UNDEFINED_IDENTIFIER', identifier);
         }
 
         return value;
@@ -269,7 +274,7 @@ export class Evaluator {
 
     #callFunction(fn: IObject, args: IObject[]): IObject {
         if (!(fn instanceof Fn)) {
-            return this.#createError('NOT_FUNCTION', fn.type);
+            return Evaluator.#createError('NOT_FUNCTION', fn.type);
         }
 
         const { params, env } = fn.value;
@@ -361,7 +366,7 @@ export class Evaluator {
             const { parameters, body } = n;
 
             if (parameters === null) {
-                return this.#createError(
+                return Evaluator.#createError(
                     'INVALID_FUNCTION_PARAMETERS',
                     n.token.value
                 );
@@ -377,7 +382,7 @@ export class Evaluator {
             }
 
             if (n.args === null) {
-                return this.#createError(
+                return Evaluator.#createError(
                     'INVALID_FUNCTION_PARAMETERS',
                     n.token.value
                 );
@@ -396,7 +401,7 @@ export class Evaluator {
         }
 
         if (n instanceof BooleanLiteral) {
-            return this.#convertToBooleanObject(n.value);
+            return Evaluator.#convertToBooleanObject(n.value);
         }
 
         return Evaluator.#references.null;
