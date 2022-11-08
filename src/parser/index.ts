@@ -14,6 +14,7 @@ import {
     Prefix,
     Program,
     ReturnStatement,
+    StringLiteral,
 } from '../ast';
 import { Lexer } from '../lexer';
 import { Token, tokenList, TokenType } from '../lexer/tokens';
@@ -59,6 +60,7 @@ export class Parser {
         [tokenList.LEFT_PARENTHESIS]: () => this.#parseGroupedExpression(),
         [tokenList.IF]: () => this.#parseIfExpression(),
         [tokenList.FUNCTION]: () => this.#parseFunctionLiteral(),
+        [tokenList.STRING]: () => this.#parseStringLiteral(),
     };
 
     infixParsers: Record<string, InfixParseFunction> = {
@@ -260,6 +262,12 @@ export class Parser {
         }
 
         return identifiers;
+    }
+
+    #parseStringLiteral(): StringLiteral {
+        const { currentToken } = this;
+
+        return new StringLiteral(currentToken);
     }
 
     #parseFunctionLiteral(): FunctionLiteral | null {

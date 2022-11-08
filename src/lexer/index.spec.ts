@@ -370,6 +370,25 @@ if(5 < 15){
     t.deepEqual(tokens, expectedTokens);
 });
 
+test.only('test lexer with strings', (t) => {
+    const input = `"john doe";
+    "example"
+    "something"
+`;
+
+    const l = new Lexer(input);
+
+    const expectedTokens = [
+        new Token(tokenList.STRING, 'john doe'),
+        new Token(tokenList.SEMICOLON, ';'),
+        new Token(tokenList.STRING, 'example'),
+        new Token(tokenList.STRING, 'something'),
+    ];
+
+    const tokens = l.lexInput();
+    t.deepEqual(tokens, expectedTokens);
+});
+
 test('read integer expressions with no spaces separating digits', (t) => {
     const input = `3*4;`;
 

@@ -16,6 +16,7 @@ export class Lexer {
         [')', tokenList.RIGHT_PARENTHESIS],
         ['{', tokenList.LEFT_BRACE],
         ['}', tokenList.RIGHT_BRACE],
+        ['"', tokenList.STRING],
         [null, tokenList.EOF],
     ]);
 
@@ -88,6 +89,23 @@ export class Lexer {
         return this.input.slice(position, this.position);
     }
 
+    #readString(): string {
+        const stringParts = [];
+
+        while (this.character !== '"' || this.character === null) {
+            if (this.character === '\\') {
+                this.#readSegment();
+                stringParts.push(this.character);
+            } else {
+                stringParts.push(this.character);
+            }
+
+            this.#readSegment();
+        }
+
+        return stringParts.join('');
+    }
+
     #peekCharacter(): string | null {
         return this.input.charAt(this.readPosition);
     }
@@ -100,6 +118,14 @@ export class Lexer {
         const t = Lexer.#tokenMap.get(character);
 
         if (t) {
+            if (character === '"') {
+                this.#readSegment();
+                const value = this.#readString();
+                this.#readSegment();
+
+                return new Token(tokenList.STRING, value);
+            }
+
             if (character === '=' || character === '!') {
                 const peekedCharacter = this.#peekCharacter();
 
@@ -121,7 +147,7 @@ export class Lexer {
             return new Token(t, character ?? '');
         }
 
-        // As the Emoji unicode property matches numbers,
+        // As the Emoji unicode property (\p{Emoji}) matches numbers,
         // we check for numbers first.
         if (Lexer.isNumber(character as string)) {
             const value = this.#readNumber();
