@@ -8,6 +8,7 @@ export const objectList = {
     NULL: 'NULL',
     RETURN: 'RETURN',
     FUNCTION: 'FUNCTION',
+    STRING: 'STRING',
     ERROR: 'ERROR',
 };
 
@@ -87,6 +88,19 @@ export class Fn implements IObject {
         const { params, body } = this.value;
 
         return `fn(${params.join(', ')}) {\n${body.toString()}\n}`;
+    }
+}
+
+export class Str implements IObject {
+    type = objectList.STRING;
+    value: string;
+
+    constructor(value: string) {
+        this.value = value;
+    }
+
+    toString(): string {
+        return this.value;
     }
 }
 

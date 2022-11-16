@@ -92,18 +92,45 @@ export class Lexer {
     #readString(): string {
         const stringParts = [];
 
-        while (this.character !== '"' || this.character === null) {
+        this.#readSegment();
+
+        while (this.character !== '"') {
             if (this.character === '\\') {
+                stringParts.push(this.character);
                 this.#readSegment();
-                stringParts.push(this.character);
-            } else {
-                stringParts.push(this.character);
             }
 
+            if (this.character === null) {
+                throw new Error('"');
+            }
+
+            stringParts.push(this.character);
             this.#readSegment();
         }
 
-        return stringParts.join('');
+        this.#readSegment();
+
+        return stringParts.join('').replaceAll(/\\[a-z"\\]/g, (v) => {
+            const character = v.charAt(1);
+            // Convert the escaped character to a C escape sequence.
+            switch (character) {
+                case '0':
+                    return '\0';
+                case 'b':
+                    return '\b';
+                case 'f':
+                    return '\f';
+                case 'n':
+                    return '\n';
+                case 'r':
+                    return '\r';
+                case 't':
+                    return '\t';
+                case 'v':
+                    return '\v';
+            }
+            return character;
+        });
     }
 
     #peekCharacter(): string | null {
@@ -118,12 +145,15 @@ export class Lexer {
         const t = Lexer.#tokenMap.get(character);
 
         if (t) {
-            if (character === '"') {
-                this.#readSegment();
-                const value = this.#readString();
-                this.#readSegment();
+            try {
+                if (character === '"') {
+                    const value = this.#readString();
 
-                return new Token(tokenList.STRING, value);
+                    return new Token(t, value);
+                }
+            } catch (e) {
+                this.#readSegment();
+                return new Token(tokenList.ILLEGAL, (e as Error).message);
             }
 
             if (character === '=' || character === '!') {

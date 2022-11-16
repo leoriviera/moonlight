@@ -471,10 +471,10 @@ test('test string literals', (t) => {
     }
 });
 
-test.only('test string literals with escaped characters', (t) => {
+test('test string literals with escaped characters', (t) => {
     // prettier-ignore
     const stringTests = [
-        { input: "\"\\\"hello!", expected: '"hello!' },
+        { input: "\"\\\"hello!\"", expected: '"hello!' },
         { input: "\"hello \\\"world\\\"\"", expected: 'hello "world"' },
         { input: "\"good evening, \\\"john\\\"\"", expected: 'good evening, "john"' },
     ];

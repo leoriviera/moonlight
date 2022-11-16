@@ -370,7 +370,7 @@ if(5 < 15){
     t.deepEqual(tokens, expectedTokens);
 });
 
-test.only('test lexer with strings', (t) => {
+test('test lexer with strings', (t) => {
     const input = `"john doe";
     "example"
     "something"
@@ -386,6 +386,35 @@ test.only('test lexer with strings', (t) => {
     ];
 
     const tokens = l.lexInput();
+    t.deepEqual(tokens, expectedTokens);
+});
+
+test('test lexer with unterminated string', (t) => {
+    const input = `"john doe`;
+
+    const l = new Lexer(input);
+
+    const expectedTokens = [new Token(tokenList.ILLEGAL, '"')];
+
+    const tokens = l.lexInput();
+
+    t.deepEqual(tokens, expectedTokens);
+});
+
+test('string concatenation returns expected tokens', (t) => {
+    const input = `"\\\\" + "b";`;
+
+    const l = new Lexer(input);
+
+    const expectedTokens = [
+        new Token(tokenList.STRING, '\\'),
+        new Token(tokenList.PLUS, '+'),
+        new Token(tokenList.STRING, 'b'),
+        new Token(tokenList.SEMICOLON, ';'),
+    ];
+
+    const tokens = l.lexInput();
+
     t.deepEqual(tokens, expectedTokens);
 });
 
