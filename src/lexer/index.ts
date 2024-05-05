@@ -16,6 +16,7 @@ export class Lexer {
         [')', tokenList.RIGHT_PARENTHESIS],
         ['{', tokenList.LEFT_BRACE],
         ['}', tokenList.RIGHT_BRACE],
+        ['"', tokenList.STRING],
         [null, tokenList.EOF],
     ]);
 
@@ -88,6 +89,50 @@ export class Lexer {
         return this.input.slice(position, this.position);
     }
 
+    #readString(): string {
+        const stringParts = [];
+
+        this.#readSegment();
+
+        while (this.character !== '"') {
+            if (this.character === '\\') {
+                stringParts.push(this.character);
+                this.#readSegment();
+            }
+
+            if (this.character === null) {
+                throw new Error('"');
+            }
+
+            stringParts.push(this.character);
+            this.#readSegment();
+        }
+
+        this.#readSegment();
+
+        return stringParts.join('').replaceAll(/\\[a-z"\\]/g, (v) => {
+            const character = v.charAt(1);
+            // Convert the escaped character to a C escape sequence.
+            switch (character) {
+                case '0':
+                    return '\0';
+                case 'b':
+                    return '\b';
+                case 'f':
+                    return '\f';
+                case 'n':
+                    return '\n';
+                case 'r':
+                    return '\r';
+                case 't':
+                    return '\t';
+                case 'v':
+                    return '\v';
+            }
+            return character;
+        });
+    }
+
     #peekCharacter(): string | null {
         return this.input.charAt(this.readPosition);
     }
@@ -100,6 +145,17 @@ export class Lexer {
         const t = Lexer.#tokenMap.get(character);
 
         if (t) {
+            try {
+                if (character === '"') {
+                    const value = this.#readString();
+
+                    return new Token(t, value);
+                }
+            } catch (e) {
+                this.#readSegment();
+                return new Token(tokenList.ILLEGAL, (e as Error).message);
+            }
+
             if (character === '=' || character === '!') {
                 const peekedCharacter = this.#peekCharacter();
 
@@ -121,7 +177,7 @@ export class Lexer {
             return new Token(t, character ?? '');
         }
 
-        // As the Emoji unicode property matches numbers,
+        // As the Emoji unicode property (\p{Emoji}) matches numbers,
         // we check for numbers first.
         if (Lexer.isNumber(character as string)) {
             const value = this.#readNumber();

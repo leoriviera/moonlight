@@ -5,6 +5,7 @@ export const tokenList = {
     // Identifiers and literals
     IDENTIFIER: 'IDENTIFIER',
     INTEGER: 'INTEGER',
+    STRING: 'STRING',
 
     // Operators
     ASSIGN: '=',

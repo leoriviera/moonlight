@@ -10,6 +10,7 @@ import {
     Infix,
     IntegerLiteral,
     Prefix,
+    StringLiteral,
 } from '../expression';
 import { BlockStatement } from '../statement';
 
@@ -169,4 +170,24 @@ test('call expressions with an identifier produce expected string output', (t) =
     const callExpression = new CallExpression(callToken, minus, [x, y]);
 
     t.is(callExpression.toString(), 'minus(x, y)');
+});
+
+test('string literals produce expected string output', (t) => {
+    const stringLiteral = new StringLiteral(
+        new Token(tokenList.STRING, 'hello')
+    );
+
+    t.is(stringLiteral.toString(), 'hello');
+});
+
+test('string literals with control characters produce expected string output', (t) => {
+    const stringLiteral = new StringLiteral(
+        new Token(tokenList.STRING, 'hello\njohn doe')
+    );
+
+    t.is(
+        stringLiteral.toString(),
+        `hello
+john doe`
+    );
 });

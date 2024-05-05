@@ -370,6 +370,54 @@ if(5 < 15){
     t.deepEqual(tokens, expectedTokens);
 });
 
+test('test lexer with strings', (t) => {
+    const input = `"john doe";
+    "example"
+    "something"
+`;
+
+    const l = new Lexer(input);
+
+    const expectedTokens = [
+        new Token(tokenList.STRING, 'john doe'),
+        new Token(tokenList.SEMICOLON, ';'),
+        new Token(tokenList.STRING, 'example'),
+        new Token(tokenList.STRING, 'something'),
+    ];
+
+    const tokens = l.lexInput();
+    t.deepEqual(tokens, expectedTokens);
+});
+
+test('test lexer with unterminated string', (t) => {
+    const input = `"john doe`;
+
+    const l = new Lexer(input);
+
+    const expectedTokens = [new Token(tokenList.ILLEGAL, '"')];
+
+    const tokens = l.lexInput();
+
+    t.deepEqual(tokens, expectedTokens);
+});
+
+test('string concatenation returns expected tokens', (t) => {
+    const input = `"\\\\" + "b";`;
+
+    const l = new Lexer(input);
+
+    const expectedTokens = [
+        new Token(tokenList.STRING, '\\'),
+        new Token(tokenList.PLUS, '+'),
+        new Token(tokenList.STRING, 'b'),
+        new Token(tokenList.SEMICOLON, ';'),
+    ];
+
+    const tokens = l.lexInput();
+
+    t.deepEqual(tokens, expectedTokens);
+});
+
 test('read integer expressions with no spaces separating digits', (t) => {
     const input = `3*4;`;
 

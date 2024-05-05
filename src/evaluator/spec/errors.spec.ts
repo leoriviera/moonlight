@@ -44,6 +44,14 @@ test('errors are handled correctly', (t) => {
             input: 'foobar',
             expected: 'identifier not found: foobar',
         },
+        {
+            input: '"hello" - "world"',
+            expected: 'unknown operator: STRING - STRING',
+        },
+        {
+            input: '"hello" * "world"',
+            expected: 'unknown operator: STRING * STRING',
+        },
     ];
 
     for (const test of errorTests) {

@@ -51,6 +51,20 @@ export class IntegerLiteral implements IExpression {
     }
 }
 
+export class StringLiteral implements IExpression {
+    token: Token;
+    value: string;
+
+    constructor(token: Token) {
+        this.token = token;
+        this.value = token.value;
+    }
+
+    toString(): string {
+        return this.value;
+    }
+}
+
 export class Prefix implements IExpression {
     token: Token;
     operator: string;

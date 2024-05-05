@@ -1,9 +1,9 @@
 import test from 'ava';
 
 import { Evaluator } from '../index';
-import { Integer } from '../objects';
+import { Integer, Str } from '../objects';
 
-test('return statements evaluate properly', (t) => {
+test('return statements evaluate numbers properly', (t) => {
     const returnTests = [
         {
             input: 'return 10',
@@ -39,6 +39,43 @@ test('return statements evaluate properly', (t) => {
 
         t.not(result, null);
         t.true(result instanceof Integer);
+        t.is(result?.value, test.expected);
+    }
+});
+
+test('return statements evaluate strings properly', (t) => {
+    const returnTests = [
+        {
+            input: 'return "hello, world!"',
+            expected: 'hello, world!',
+        },
+        {
+            input: 'return "hello, world! 🌎👨‍👩‍👧"',
+            expected: 'hello, world! 🌎👨‍👩‍👧',
+        },
+        {
+            input: 'return "\n"',
+            expected: '\n',
+        },
+        {
+            input: 'return "\t"',
+            expected: '\t',
+        },
+        {
+            input: 'return "hello" + " world!"',
+            expected: 'hello world!',
+        },
+        {
+            input: 'return "hello" + " " + "world! 👨‍👩‍👧"',
+            expected: 'hello world! 👨‍👩‍👧',
+        },
+    ];
+
+    for (const test of returnTests) {
+        const result = new Evaluator(test.input).evaluate();
+
+        t.not(result, null);
+        t.true(result instanceof Str);
         t.is(result?.value, test.expected);
     }
 });

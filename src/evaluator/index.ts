@@ -15,6 +15,7 @@ import {
     Prefix,
     Program,
     ReturnStatement,
+    StringLiteral,
 } from '../ast';
 import { Parser } from '../parser';
 
@@ -29,6 +30,7 @@ import {
     Null,
     objectList,
     Return,
+    Str,
 } from './objects';
 
 export class Evaluator {
@@ -136,6 +138,26 @@ export class Evaluator {
         return evaluatorFn(left.value, right.value);
     }
 
+    #evaluateStringInfixExpression(
+        operator: string,
+        left: Str,
+        right: Str
+    ): IObject {
+        if (operator !== '+') {
+            throw Evaluator.#throwError(
+                'UNKNOWN_OPERATOR',
+                left.type,
+                operator,
+                right.type
+            );
+        }
+
+        const { value: leftValue } = left;
+        const { value: rightValue } = right;
+
+        return new Str(leftValue + rightValue);
+    }
+
     #evaluateInfixExpression(
         operator: string,
         left: IObject,
@@ -152,6 +174,10 @@ export class Evaluator {
 
         if (left instanceof Integer && right instanceof Integer) {
             return this.#evaluateIntegerInfixExpression(operator, left, right);
+        }
+
+        if (left instanceof Str && right instanceof Str) {
+            return this.#evaluateStringInfixExpression(operator, left, right);
         }
 
         const operatorMap: Record<string, (l: unknown, r: unknown) => IObject> =
@@ -368,6 +394,10 @@ export class Evaluator {
 
         if (n instanceof IntegerLiteral) {
             return new Integer(n.value);
+        }
+
+        if (n instanceof StringLiteral) {
+            return new Str(n.value);
         }
 
         if (n instanceof BooleanLiteral) {

@@ -12,6 +12,7 @@ import {
     IntegerLiteral,
     Prefix,
     Program,
+    StringLiteral,
 } from '../ast';
 
 import {
@@ -448,5 +449,46 @@ test('test identifier call expressions with identifier arguments', (t) => {
                 test.args[i]
             );
         }
+    }
+});
+
+test('test string literals', (t) => {
+    const stringTests = [
+        { input: '"hello world"', expected: 'hello world' },
+        { input: '"good evening"', expected: 'good evening' },
+    ];
+
+    for (const test of stringTests) {
+        const p = new Parser(test.input);
+        const program = p.parseProgram();
+
+        t.deepEqual(p.errors, []);
+        assertProgramValid(t, program, 1);
+
+        const s = program!.statements[0] as ExpressionStatement<StringLiteral>;
+
+        t.is(s.expression.value, test.expected);
+    }
+});
+
+test('test string literals with escaped characters', (t) => {
+    // prettier-ignore
+    const stringTests = [
+        { input: "\"\\\"hello!\"", expected: '"hello!' },
+        { input: "\"hello \\\"world\\\"\"", expected: 'hello "world"' },
+        { input: "\"good evening, \\\"john\\\"\"", expected: 'good evening, "john"' },
+    ];
+
+    for (const test of stringTests) {
+        const p = new Parser(test.input);
+        const program = p.parseProgram();
+
+        t.deepEqual(p.errors, []);
+
+        assertProgramValid(t, program, 1);
+
+        const s = program!.statements[0] as ExpressionStatement<StringLiteral>;
+
+        t.is(s.expression.value, test.expected);
     }
 });
